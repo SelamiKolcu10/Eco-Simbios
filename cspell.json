@@ -1,0 +1,66 @@
+{
+    "version": "0.2",
+    "language": "en,tr",
+    "ignorePaths": [
+        "node_modules/**",
+        "dist/**",
+        "*.lock",
+        "package-lock.json"
+    ],
+    "words": [
+        // Project name
+        "Simbios", "Symbiosis", "symbiosis",
+
+        // Turkish UI strings
+        "Simbiyoz", "simbiyoz", "Eşleştirme", "eşleştirme",
+        "Eşleşme", "eşleşme", "Tümü", "Tekstil", "Kimyasal",
+        "Ahşap", "Tebrikler", "Anlaşma", "anlaşma", "imzalandı",
+        "Hazırlanıyor", "Protokol", "Çıkış", "Pazarı", "pazarı",
+        "Bandırma", "Yeşil", "İstihdam", "Kotası", "Mutabakat",
+        "Endüstriyel", "Hammadde", "Destekli", "Fırsatı", "tespit",
+        "Potansiyel", "Tahmini", "Önlenen", "Emisyon", "Güveni",
+        "Malzeme", "Alıcı", "Kategoriler", "Modülü", "Atık",
+        "Hurdası", "Kırpıntıları", "Talaş", "Granül", "Cullet",
+        "Dolgusu", "İzolasyon", "Rafinasyon", "Rafinerisi",
+        "Biyokütle", "Ergitme", "Kalıplama", "Lojistik",
+        "Ornek", "ornek", "firma",
+        "Giriş", "giriş", "Şifre", "şifre", "şifrenizi",
+        "Lütfen", "girin", "Posta", "yapılıyor", "Yap",
+        "sistemi", "herhangi", "bir", "yapabilirsiniz",
+        "emailId", "passwordId",
+
+        // Custom CSS class names
+        "glow-card", "glowcard", "btn-cyber", "btncyber",
+        "input-cyber", "inputcyber", "mk-cat-btn", "mkcatbtn",
+        "pulse-dot", "pulsedot", "scan-line", "scanline",
+        "sidebar-link", "sidebarlink", "kpi", "KPI",
+        "kpiBonus", "kpivalueflash",
+
+        // camelCase variable names
+        "kpiBonus", "matchedIds", "extraEarnings", "extraCarbon",
+        "buyerUse", "matchScore", "aiMatch", "flashCarbon",
+        "flashEarnings", "earningsFlashKey", "carbonFlashKey",
+        "focusedField", "selectedItem", "activeCat", "filteredItems",
+        "handleMatchConfirmed", "handleSuccessClose", "handleStartMatch",
+        "showSuccess", "calcResults", "showHwModal", "syncTime",
+        "onNavigate", "onLogout", "onMatch", "onMatchConfirmed",
+        "setKpiBonus", "setMatchedIds", "setFocusedField",
+
+        // Technical / domain terms
+        "symbioz", "simbiyotik", "Simbiyotik",
+        "Mucilage", "mucilage", "biyokutle", "Biyokutle",
+        "pellet", "OWASP", "tailwindcss", "vite", "esbuild",
+        "Seydişehir", "Kocaeli", "Mersin", "Denizli", "İzmit",
+
+        // Font Awesome icon names used as strings
+        "seedling", "gauge-high", "map-location-dot",
+        "hand-holding-heart", "shield-halved", "arrows-rotate",
+        "sign-out-alt", "right-to-bracket", "layer-group",
+        "weight-hanging", "box-open",
+
+        // Misc identifiers
+        "Kullanım", "kullanim", "cyberpunk", "uptime",
+        "internship", "INTERNSHIP", "KVKK", "Rafinasyon"
+    ],
+    "flagWords": []
+}
