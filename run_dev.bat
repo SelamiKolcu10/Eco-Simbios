@@ -8,7 +8,7 @@ echo.
 set "PATH=%PATH%;C:\Program Files\nodejs\"
 
 :: Guncel dizinde npm komutunu calistir
-call npm run dev
+cd frontend && call npm run dev
 
 if %ERRORLEVEL% neq 0 (
     echo.
