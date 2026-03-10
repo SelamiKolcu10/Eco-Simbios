@@ -1,8 +1,24 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { marketListings } from '../../data/marketListings';
 import MarketCard from './MarketCard';
 import MarketModal from './MarketModal';
 import AddListingModal from './AddListingModal';
+
+const STORAGE_KEY = 'eco-simbios-listings';
+
+function loadListings() {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            // Merge: saved custom listings + default listings (avoid duplicates)
+            const defaultIds = new Set(marketListings.map(i => i.id));
+            const customListings = parsed.filter(i => !defaultIds.has(i.id));
+            return [...customListings, ...marketListings];
+        }
+    } catch { /* ignore parse errors */ }
+    return marketListings;
+}
 
 const categories = [
     { id: 'all', icon: 'fa-layer-group', label: 'Tümü' },
@@ -14,11 +30,19 @@ const categories = [
 ];
 
 export default function Market({ onMatch, matchedIds }) {
-    const [listings, setListings] = useState(marketListings);
+    const [listings, setListings] = useState(loadListings);
     const [activeCat, setActiveCat] = useState('all');
     const [search, setSearch] = useState('');
     const [selectedItem, setSelectedItem] = useState(null);
     const [showAddListing, setShowAddListing] = useState(false);
+
+    useEffect(() => {
+        const defaultIds = new Set(marketListings.map(i => i.id));
+        const customListings = listings.filter(i => !defaultIds.has(i.id));
+        if (customListings.length > 0) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(customListings));
+        }
+    }, [listings]);
 
     const filteredItems = useMemo(() => {
         let items = activeCat === 'all' ? listings : listings.filter(i => i.category === activeCat);
@@ -27,7 +51,7 @@ export default function Market({ onMatch, matchedIds }) {
             items = items.filter(i => i.material.toLowerCase().includes(q) || i.source.toLowerCase().includes(q));
         }
         return items;
-    }, [activeCat, search]);
+    }, [activeCat, search, listings]);
 
     const handleMatchConfirmed = ({ extraEarnings, extraCarbon, newListing }) => {
         if (newListing) {

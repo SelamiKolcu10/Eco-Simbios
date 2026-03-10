@@ -1,5 +1,5 @@
 const errorHandler = (err, req, res, next) => {
-    console.error(err.stack.red || err.stack);
+    console.error(err.stack);
 
     let error = { ...err };
     error.message = err.message;

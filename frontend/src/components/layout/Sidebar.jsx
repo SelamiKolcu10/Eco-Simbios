@@ -57,10 +57,22 @@ export function Sidebar({ activeSection, onNavigate, onLogout }) {
         <TooltipProvider delayDuration={0}>
             <aside
                 className={cn(
-                    "flex h-screen flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out border-r border-sidebar-border z-20 shrink-0",
+                    "relative flex h-screen flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out border-r border-sidebar-border z-20 shrink-0",
                     collapsed ? "w-20" : "w-72"
                 )}
             >
+                {/* Toggle Button - always visible on the edge */}
+                <button
+                    onClick={() => setCollapsed(!collapsed)}
+                    className="absolute -right-3 top-7 z-50 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-md transition-colors hover:bg-primary hover:text-primary-foreground"
+                >
+                    {collapsed ? (
+                        <ChevronRight className="h-3.5 w-3.5" />
+                    ) : (
+                        <ChevronLeft className="h-3.5 w-3.5" />
+                    )}
+                </button>
+
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 h-28 shrink-0">
                     <div className={cn("flex items-center gap-3", collapsed && "justify-center w-full")}>
@@ -75,19 +87,6 @@ export function Sidebar({ activeSection, onNavigate, onLogout }) {
                             </div>
                         )}
                     </div>
-                    <button
-                        onClick={() => setCollapsed(!collapsed)}
-                        className={cn(
-                            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-accent text-sidebar-accent-foreground transition-colors hover:bg-sidebar-border",
-                            collapsed && "absolute -right-4 top-10 z-10 bg-primary text-primary-foreground shadow-lg hover:bg-primary/90"
-                        )}
-                    >
-                        {collapsed ? (
-                            <ChevronRight className="h-4 w-4" />
-                        ) : (
-                            <ChevronLeft className="h-4 w-4" />
-                        )}
-                    </button>
                 </div>
 
                 {/* Navigation */}
@@ -191,7 +190,7 @@ export function Sidebar({ activeSection, onNavigate, onLogout }) {
                                 )}
                             >
                                 <Avatar className="h-10 w-10 ring-2 ring-primary/20 shrink-0">
-                                    <AvatarImage src="/avatar.png" />
+                                    <AvatarImage src="https://ui-avatars.com/api/?name=Borusan+User&background=10b981&color=fff" />
                                     <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
                                         AU
                                     </AvatarFallback>

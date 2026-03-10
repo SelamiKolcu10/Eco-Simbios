@@ -1,7 +1,26 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Search, Bell, Lock, Wifi, Settings } from 'lucide-react';
 
+const mockNotifications = [
+    { id: 1, icon: '♻️', text: 'Yeni eşleşme: Bandırma Gübre Fabrikası', time: '2 dk önce' },
+    { id: 2, icon: '🎉', text: "Borusan Eco-Simbiyoz'a hoş geldiniz!", time: '1 saat önce' },
+    { id: 3, icon: '📊', text: 'Haftalık karbon raporu hazır', time: '3 saat önce' },
+];
+
 export function DashboardContent({ activeSection, children }) {
+    const [showNotifications, setShowNotifications] = useState(false);
+    const notifRef = useRef(null);
+
+    useEffect(() => {
+        function handleClickOutside(e) {
+            if (notifRef.current && !notifRef.current.contains(e.target)) {
+                setShowNotifications(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     const getPageTitle = (id) => {
         switch (id) {
             case 'dashboard': return 'Genel Bakış';
@@ -29,7 +48,7 @@ export function DashboardContent({ activeSection, children }) {
     return (
         <div className="flex-1 flex flex-col overflow-auto bg-background">
             {/* Header */}
-            <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur-sm shrink-0">
+            <header className="sticky top-0 z-10 border-b border-border bg-background shrink-0">
                 <div className="flex items-center justify-between px-4 md:px-8 py-4">
                     <div>
                         <h1 className="text-xl md:text-2xl font-bold text-foreground">{getPageTitle(activeSection)}</h1>
@@ -52,12 +71,39 @@ export function DashboardContent({ activeSection, children }) {
                                 className="h-10 w-64 rounded-xl border border-border bg-muted/50 pl-10 pr-4 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:bg-background"
                             />
                         </div>
-                        <button className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground shadow-sm">
-                            <Bell className="h-5 w-5" />
-                            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                                3
-                            </span>
-                        </button>
+                        <div className="relative" ref={notifRef}>
+                            <button
+                                onClick={() => setShowNotifications(!showNotifications)}
+                                className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground shadow-sm"
+                            >
+                                <Bell className="h-5 w-5" />
+                                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                                    3
+                                </span>
+                            </button>
+                            {showNotifications && (
+                                <div className="absolute right-0 mt-2 w-80 rounded-xl z-[999] border border-slate-200 dark:border-slate-700 overflow-hidden ring-1 ring-black/5" style={{ backgroundColor: 'white', boxShadow: '0 10px 40px rgba(0,0,0,0.15)' }}>
+                                    <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                                        <span className="text-sm font-bold text-slate-800 dark:text-white">Bildirimler</span>
+                                        <span className="text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full">3 yeni</span>
+                                    </div>
+                                    <div className="divide-y divide-slate-100 dark:divide-slate-700">
+                                        {mockNotifications.map(n => (
+                                            <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer">
+                                                <span className="text-lg mt-0.5">{n.icon}</span>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-xs font-medium text-slate-700 dark:text-slate-200">{n.text}</p>
+                                                    <p className="text-[10px] text-slate-400 mt-0.5">{n.time}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="px-4 py-2.5 border-t border-slate-100 dark:border-slate-700">
+                                        <button className="text-xs font-semibold text-primary hover:underline w-full text-center">Tümünü Gör</button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </header>
