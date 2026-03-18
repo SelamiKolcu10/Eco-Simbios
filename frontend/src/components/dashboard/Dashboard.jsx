@@ -102,25 +102,42 @@ const Dashboard = ({ kpiBonus }) => {
     return (
         <div className="animate-in fade-in zoom-in-95 duration-500 w-full max-w-7xl mx-auto py-8">
 
-            {/* New Hero Section */}
-            <div className="flex flex-col items-center justify-center text-center max-w-4xl mx-auto py-12 mb-16">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-100 mb-8">
-                    <Play className="h-3.5 w-3.5 fill-current" />
-                    EĞİTİM MODÜLÜ
+            {/* New Hero Section with Background */}
+            <div className="w-full max-w-7xl mx-auto mb-16 rounded-3xl overflow-hidden min-h-[500px] flex items-center justify-center bg-slate-900 shadow-xl border border-slate-100 p-8 md:p-12 relative z-10">
+                {/* Background Image with Gradient Overlay */}
+                <div
+                    className="absolute inset-0 bg-cover bg-center bg-no-repeat z-0"
+                    style={{
+                        backgroundImage: "url('/images/simbiyoz.png')",
+                        backgroundSize: 'cover'
+                    }}
+                >
+                    {/* Radial gradient to fade out towards center and edges */}
+                    <div className="absolute inset-0 bg-gradient-radial from-white/60 via-white/40 to-transparent"></div>
+                    {/* White fade at top and bottom for smooth transition */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-white via-transparent to-white opacity-80"></div>
                 </div>
 
-                <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-[#1e293b] mb-6 font-serif">
-                    Endüstriyel <span className="text-[#006A4E]">Simbiyoz</span> Nedir?
-                </h1>
+                {/* Content Overlay */}
+                <div className="relative z-10 flex flex-col items-center justify-center text-center max-w-4xl mx-auto py-20 px-4">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50/80 backdrop-blur-sm text-emerald-700 text-xs font-semibold border border-emerald-100 mb-8 shadow-sm">
+                        <Play className="h-3.5 w-3.5 fill-current" />
+                        EĞİTİM MODÜLÜ
+                    </div>
 
-                <p className="text-lg md:text-xl text-slate-500 max-w-2xl mb-10">
-                    Endüstriyel atıkları ortak kaynaklara dönüştüren sürdürülebilir üretim ekosistemi.
-                </p>
+                    <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-[#1e293b] mb-6 font-serif drop-shadow-sm">
+                        Endüstriyel <span className="text-[#006A4E]">Simbiyoz</span> Nedir?
+                    </h1>
 
-                <button className="flex items-center gap-2 px-8 py-3 bg-[#006A4E] hover:bg-[#00553e] text-white rounded-xl font-medium transition-all shadow-md hover:shadow-lg">
-                    <Play className="h-4 w-4 fill-current" />
-                    Gör
-                </button>
+                    <p className="text-lg md:text-xl text-slate-600 max-w-2xl mb-10 font-medium">
+                        Endüstriyel atıkları ortak kaynaklara dönüştüren sürdürülebilir üretim ekosistemi.
+                    </p>
+
+                    <button className="flex items-center gap-2 px-10 py-4 bg-[#006A4E] hover:bg-[#00553e] text-white rounded-2xl font-semibold transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 active:scale-95">
+                        <Play className="h-5 w-5 fill-current" />
+                        Gör
+                    </button>
+                </div>
             </div>
 
             {/* Old Hero Section (now below the new one) */}
