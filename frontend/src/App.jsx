@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sidebar } from './components/layout/Sidebar';
+import { TopNavbar } from './components/layout/TopNavbar';
 import { DashboardContent } from './components/layout/DashboardContent';
 
 import Dashboard from './components/dashboard/Dashboard';
@@ -40,11 +40,10 @@ export default function App() {
     }
 
     return (
-        <div className="flex h-screen overflow-hidden bg-background font-sans text-foreground">
-            <Sidebar
+        <div className="flex flex-col h-screen overflow-hidden bg-[#F8F9FA] font-sans text-foreground">
+            <TopNavbar
                 activeSection={activeSection}
-                onNavigate={setActiveSection}
-                onLogout={handleLogout}
+                setActiveSection={setActiveSection}
             />
             <DashboardContent activeSection={activeSection}>
                 <div className="space-y-6">

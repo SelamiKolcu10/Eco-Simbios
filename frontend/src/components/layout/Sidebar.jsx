@@ -19,7 +19,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/
 const navItems = [
     {
         id: "dashboard",
-        label: "Kontrol Paneli",
+        label: "Endüstriyel Simbiyoz",
         icon: <LayoutDashboard className="h-5 w-5" />,
     },
     {

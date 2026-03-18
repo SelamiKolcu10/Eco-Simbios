@@ -4,7 +4,7 @@ import MarketCard from './MarketCard';
 import MarketModal from './MarketModal';
 import AddListingModal from './AddListingModal';
 
-const STORAGE_KEY = 'eco-simbios-listings';
+const STORAGE_KEY = 'eco-simbios-listings-v3';
 
 function loadListings() {
     try {
@@ -67,64 +67,89 @@ export default function Market({ onMatch, matchedIds }) {
     };
 
     return (
-        <div className="space-y-5">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                        <span><i className="fa-solid fa-recycle text-amber-400 text-lg"></i></span>
-                    </div>
-                    <div>
-                        <h3 className="text-base font-bold text-slate-800">Endüstriyel Atık ve Hammadde Eşleştirme Platformu</h3>
-                        <p className="text-[11px] text-slate-500">Simbiyoz Pazarı — Yapay Zeka Destekli Eşleşme</p>
-                    </div>
+        <div className="space-y-8 max-w-7xl mx-auto py-4">
+            
+            {/* Header Section */}
+            <div className="flex flex-col gap-6">
+                <div>
+                    <h3 className="text-2xl font-bold text-slate-800 font-serif mb-2">Endüstriyel Pazar Yeri</h3>
+                    <p className="text-sm text-slate-500 font-serif">Endüstriyel fazlayı döngüsel çözümlerle buluşturun. Doğrulanmış malzemeleri güvenle keşfedin.</p>
                 </div>
-                <div className="flex items-center gap-3 relative">
-                    <div className="relative border border-gray-200 rounded-lg overflow-hidden bg-white">
+                
+                {/* Search & Actions Bar */}
+                <div className="flex flex-col md:flex-row md:items-center gap-3 w-full">
+                    <div className="relative flex-1 bg-white border border-slate-200 rounded-lg overflow-hidden flex items-center shadow-sm">
+                        <i className="fa-solid fa-search text-slate-400 text-sm pl-4 pr-2"></i>
                         <input
-                            type="text" value={search} onChange={e => setSearch(e.target.value)}
-                            placeholder="Malzeme ara..."
-                            className="input-cyber pl-9 pr-3 py-2 bg-transparent border-none text-slate-800 text-xs placeholder-gray-500 w-52 outline-none focus:ring-0"
+                            type="text" 
+                            value={search} 
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="Malzeme ara (örn: HDPE, hurda çelik)"
+                            className="w-full py-3 bg-transparent border-none text-slate-800 text-sm placeholder-gray-400 outline-none focus:ring-0 font-serif"
                         />
-                        <span><i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[10px]"></i></span>
                     </div>
+
+                    <button className="bg-[#0c4e33] hover:bg-[#093b26] text-white transition-colors text-sm font-bold px-8 py-3 rounded-lg shadow-sm font-serif">
+                        Ara
+                    </button>
 
                     <button
                         onClick={() => setShowAddListing(true)}
-                        className="bg-slate-800 hover:bg-emerald-600 text-white transition-colors text-xs font-bold px-4 py-2.5 rounded-lg flex items-center gap-2 shadow-sm"
+                        className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition-colors text-sm font-bold px-6 py-3 rounded-lg flex items-center gap-2 shadow-sm font-serif"
                     >
-                        <span><i className="fa-solid fa-plus text-[10px]"></i></span> İlan Ekle
+                        <span><i className="fa-solid fa-plus text-slate-400"></i></span> İlan Ekle
                     </button>
                 </div>
             </div>
 
-            <div className="flex gap-5">
-                <div className="w-44 shrink-0 space-y-1.5 hidden lg:block">
-                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">Kategoriler</p>
-                    {categories.map(cat => (
-                        <button
-                            key={cat.id}
-                            onClick={() => setActiveCat(cat.id)}
-                            className={`mk-cat-btn w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition flex items-center gap-2 ${activeCat === cat.id ? 'active' : 'text-slate-500'}`}
-                        >
-                            <span><i className={`fa-solid ${cat.icon} text-[10px] w-4`}></i></span>{cat.label}
-                        </button>
-                    ))}
+            <div className="flex flex-col lg:flex-row gap-8 items-start">
+                
+                {/* Sidebar Filters */}
+                <div className="w-full lg:w-56 shrink-0 space-y-2 bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-800 tracking-wider mb-4 px-2 font-serif pt-2">
+                        <i className="fa-solid fa-filter"></i>
+                        FİLTRELER
+                    </div>
+                    {categories.map(cat => {
+                        const isActive = activeCat === cat.id;
+                        return (
+                            <button
+                                key={cat.id}
+                                onClick={() => setActiveCat(cat.id)}
+                                className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition flex items-center gap-3 font-serif ${
+                                    isActive 
+                                        ? 'bg-emerald-50 text-[#0c4e33]' 
+                                        : 'text-slate-600 hover:bg-slate-50'
+                                }`}
+                            >
+                                <span className="flex-shrink-0 w-5 flex justify-center">
+                                    <i className={`fa-solid ${cat.icon} ${isActive ? 'text-[#0c4e33]' : 'text-slate-400'}`}></i>
+                                </span>
+                                {cat.label}
+                            </button>
+                        );
+                    })}
                 </div>
 
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Grid Content */}
+                <div className="flex-1 w-full">
                     {filteredItems.length === 0 ? (
-                        <div className="col-span-2 text-center py-12 text-slate-500 text-sm">
-                            <span><i className="fa-solid fa-box-open text-3xl mb-3 block"></i></span>Sonuç bulunamadı
+                        <div className="w-full text-center py-20 bg-white rounded-2xl border border-slate-100 shadow-sm text-slate-500 font-serif">
+                            <span><i className="fa-solid fa-box-open text-4xl mb-4 block text-slate-300"></i></span>
+                            <p className="text-lg mb-1">Kayıt Bulunamadı</p>
+                            <p className="text-sm">Arama kriterlerinize uygun eşleşme bulunamamıştır.</p>
                         </div>
                     ) : (
-                        filteredItems.map(item => (
-                            <MarketCard
-                                key={item.id}
-                                item={item}
-                                isMatched={matchedIds?.has(item.id) || false}
-                                onClick={() => !matchedIds?.has(item.id) && setSelectedItem(item)}
-                            />
-                        ))
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredItems.map(item => (
+                                <MarketCard
+                                    key={item.id}
+                                    item={item}
+                                    isMatched={matchedIds?.has(item.id) || false}
+                                    onClick={() => !matchedIds?.has(item.id) && setSelectedItem(item)}
+                                />
+                            ))}
+                        </div>
                     )}
                 </div>
             </div>
