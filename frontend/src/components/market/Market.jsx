@@ -1,19 +1,29 @@
 import { useState, useMemo, useEffect } from 'react';
-import { marketListings } from '../../data/marketListings';
+import { marketListings as rawListings } from '../../data/marketListings';
+import { applySmartMatching } from '../../data/matchingEngine';
 import MarketCard from './MarketCard';
 import MarketModal from './MarketModal';
 import AddListingModal from './AddListingModal';
 
-const STORAGE_KEY = 'eco-simbios-listings-v3';
+// Apply smart matching to all default listings
+const marketListings = applySmartMatching(rawListings);
+
+const STORAGE_KEY = 'eco-simbios-listings-v5';
+
+// Auto-cleanup: remove all old cache versions
+['eco-simbios-listings', 'eco-simbios-listings-v1', 'eco-simbios-listings-v2', 'eco-simbios-listings-v3', 'eco-simbios-listings-v4'].forEach(k => {
+    try { localStorage.removeItem(k); } catch {}
+});
 
 function loadListings() {
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
             const parsed = JSON.parse(saved);
-            // Merge: saved custom listings + default listings (avoid duplicates)
+            // Filter: keep only custom listings that don't clash with defaults
             const defaultIds = new Set(marketListings.map(i => i.id));
-            const customListings = parsed.filter(i => !defaultIds.has(i.id));
+            const defaultMaterials = new Set(marketListings.map(i => i.material));
+            const customListings = parsed.filter(i => !defaultIds.has(i.id) && !defaultMaterials.has(i.material));
             return [...customListings, ...marketListings];
         }
     } catch { /* ignore parse errors */ }
@@ -23,13 +33,13 @@ function loadListings() {
 const categories = [
     { id: 'all', icon: 'fa-layer-group', label: 'Tümü' },
     { id: 'Metal', icon: 'fa-gear', label: 'Metal' },
-    { id: 'Textile', icon: 'fa-shirt', label: 'Tekstil' },
-    { id: 'Plastic', icon: 'fa-cube', label: 'Plastik' },
-    { id: 'Chemical', icon: 'fa-flask', label: 'Kimyasal' },
-    { id: 'Wood', icon: 'fa-tree', label: 'Ahşap' },
+    { id: 'Tekstil', icon: 'fa-shirt', label: 'Tekstil' },
+    { id: 'Plastik', icon: 'fa-cube', label: 'Plastik' },
+    { id: 'Kimyasal', icon: 'fa-flask', label: 'Kimyasal' },
+    { id: 'Ahşap', icon: 'fa-tree', label: 'Ahşap' },
 ];
 
-export default function Market({ onMatch, matchedIds }) {
+export default function Market({ onMatch, matchedIds, hasProfile, onNavigate, pendingMatch, setPendingMatch }) {
     const [listings, setListings] = useState(loadListings);
     const [activeCat, setActiveCat] = useState('all');
     const [search, setSearch] = useState('');
@@ -68,21 +78,21 @@ export default function Market({ onMatch, matchedIds }) {
 
     return (
         <div className="space-y-8 max-w-7xl mx-auto py-4">
-            
+
             {/* Header Section */}
             <div className="flex flex-col gap-6">
                 <div>
                     <h3 className="text-2xl font-bold text-slate-800 font-serif mb-2">Endüstriyel Pazar Yeri</h3>
                     <p className="text-sm text-slate-500 font-serif">Endüstriyel fazlayı döngüsel çözümlerle buluşturun. Doğrulanmış malzemeleri güvenle keşfedin.</p>
                 </div>
-                
+
                 {/* Search & Actions Bar */}
                 <div className="flex flex-col md:flex-row md:items-center gap-3 w-full">
                     <div className="relative flex-1 bg-white border border-slate-200 rounded-lg overflow-hidden flex items-center shadow-sm">
                         <i className="fa-solid fa-search text-slate-400 text-sm pl-4 pr-2"></i>
                         <input
-                            type="text" 
-                            value={search} 
+                            type="text"
+                            value={search}
                             onChange={e => setSearch(e.target.value)}
                             placeholder="Malzeme ara (örn: HDPE, hurda çelik)"
                             className="w-full py-3 bg-transparent border-none text-slate-800 text-sm placeholder-gray-400 outline-none focus:ring-0 font-serif"
@@ -103,7 +113,7 @@ export default function Market({ onMatch, matchedIds }) {
             </div>
 
             <div className="flex flex-col lg:flex-row gap-8 items-start">
-                
+
                 {/* Sidebar Filters */}
                 <div className="w-full lg:w-56 shrink-0 space-y-2 bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
                     <div className="flex items-center gap-2 text-xs font-bold text-slate-800 tracking-wider mb-4 px-2 font-serif pt-2">
@@ -116,11 +126,10 @@ export default function Market({ onMatch, matchedIds }) {
                             <button
                                 key={cat.id}
                                 onClick={() => setActiveCat(cat.id)}
-                                className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition flex items-center gap-3 font-serif ${
-                                    isActive 
-                                        ? 'bg-emerald-50 text-[#0c4e33]' 
+                                className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition flex items-center gap-3 font-serif ${isActive
+                                        ? 'bg-emerald-50 text-[#0c4e33]'
                                         : 'text-slate-600 hover:bg-slate-50'
-                                }`}
+                                    }`}
                             >
                                 <span className="flex-shrink-0 w-5 flex justify-center">
                                     <i className={`fa-solid ${cat.icon} ${isActive ? 'text-[#0c4e33]' : 'text-slate-400'}`}></i>
@@ -154,11 +163,14 @@ export default function Market({ onMatch, matchedIds }) {
                 </div>
             </div>
 
-            {selectedItem && (
+            {(selectedItem || pendingMatch) && (
                 <MarketModal
-                    item={selectedItem}
-                    onClose={() => setSelectedItem(null)}
+                    item={selectedItem || pendingMatch}
+                    onClose={() => { setSelectedItem(null); if (setPendingMatch) setPendingMatch(null); }}
                     onMatchConfirmed={handleMatchConfirmed}
+                    hasProfile={hasProfile}
+                    onNavigate={onNavigate}
+                    setPendingMatch={setPendingMatch}
                 />
             )}
 

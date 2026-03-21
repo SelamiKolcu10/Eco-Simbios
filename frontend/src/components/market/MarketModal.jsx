@@ -1,23 +1,34 @@
 import { useState, useCallback } from 'react';
 import MatchSuccessPopup from '../shared/MatchSuccessPopup';
 
-export default function MarketModal({ item, onClose, onMatchConfirmed }) {
+export default function MarketModal({ item, onClose, onMatchConfirmed, hasProfile, onNavigate, setPendingMatch }) {
     const [loading, setLoading] = useState(false);
     const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
     const scoreColor = item.matchScore >= 85 ? '#34d399' : item.matchScore >= 70 ? '#fbbf24' : '#f87171';
 
     const handleStartMatch = () => {
+        if (!hasProfile) {
+            if (setPendingMatch) setPendingMatch(item);
+            if (onNavigate) onNavigate('matchmaking');
+            return;
+        }
+
         setLoading(true);
         setTimeout(() => {
             setLoading(false);
             setShowSuccessPopup(true);
+            if (setPendingMatch) setPendingMatch(null);
         }, 2000);
     };
 
     const handleSuccessPopupClose = () => {
         setShowSuccessPopup(false);
-        onMatchConfirmed({ extraEarnings: 45000, extraCarbon: 2.5 });
+        // Parse income to number or use default 45000 if failed
+        const parsedIncome = parseInt((item.income || '').replace(/\D/g, ''), 10);
+        const earnings = isNaN(parsedIncome) ? 45000 : parsedIncome;
+        
+        onMatchConfirmed({ extraEarnings: earnings, extraCarbon: parseFloat((item.co2 || '2.5')) || 2.5 });
         onClose();
     };
 

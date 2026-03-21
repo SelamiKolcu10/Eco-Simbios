@@ -1,5 +1,25 @@
-import React, { useState } from 'react';
-import { Truck, Flame, Recycle, X, Search, Handshake, ScrollText, Rocket } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Truck, Flame, Recycle, X, Search, Handshake, ScrollText, Rocket, ChevronDown } from 'lucide-react';
+import { findBestMatch } from '../../data/matchingEngine';
+
+const FACILITIES = [
+    { id: 1, name: 'Kocaeli Üretim Tesisi', city: 'Kocaeli' },
+    { id: 2, name: 'Bursa Otomotiv Fabrikası', city: 'Bursa' },
+    { id: 3, name: 'İzmir Tekstil Atölyesi', city: 'İzmir' },
+    { id: 4, name: 'Gaziantep Cam Sanayi', city: 'Gaziantep' },
+    { id: 5, name: 'Eskişehir Çimento Fabrikası', city: 'Eskişehir' },
+    { id: 6, name: 'Ankara Demir Çelik', city: 'Ankara' },
+    { id: 7, name: 'Gebze Plastik OSB', city: 'Kocaeli' }
+];
+
+const MATERIALS = [
+    { category: "Metal", items: ["Alüminyum Hurda", "Bakır Kablo", "Sarı Pirinç", "Çelik Talaşı"] },
+    { category: "Tekstil", items: ["Pamuklu Kırpıntı", "Polyester Kumaş", "Naylon İplik"] },
+    { category: "Plastik", items: ["PET Şişe", "HDPE Bidon", "PVC Boru Hurdası"] },
+    { category: "Kimyasal", items: ["Atık Yağ", "Çözücü (Solvent)", "Boya Çamuru"] },
+    { category: "Ahşap", items: ["Ahşap Palet", "MDF Tozu", "Talaş"] }
+
+];
 
 export default function AddListingModal({ onClose, onMatchConfirmed }) {
     const [category, setCategory] = useState('Metal');
@@ -10,6 +30,27 @@ export default function AddListingModal({ onClose, onMatchConfirmed }) {
     const [description, setDescription] = useState('');
     const [matchResult, setMatchResult] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    // Searchable dropdown states
+    const [isSourceOpen, setIsSourceOpen] = useState(false);
+    const [sourceSearch, setSourceSearch] = useState('');
+    const sourceRef = useRef(null);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (sourceRef.current && !sourceRef.current.contains(event.target)) {
+                setIsSourceOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const filteredFacilities = FACILITIES.filter(f =>
+        f.name.toLowerCase().includes(sourceSearch.toLowerCase()) ||
+        f.city.toLowerCase().includes(sourceSearch.toLowerCase())
+    );
 
     const simulateMatchProcess = (e) => {
         e.preventDefault();
@@ -34,26 +75,25 @@ export default function AddListingModal({ onClose, onMatchConfirmed }) {
             result.materialSaving = numAmount * 5000 * 0.40; // Mock 40% cheaper than new raw material
             result.totalEconomicValue = result.disposalCost + result.materialSaving;
 
-            if (category === 'Logistics' || category === 'Storage') {
-                result.partner = "Borusan Lojistik A.Ş.";
-                result.message = "Lojistik Sinerjisi Başarılı! Kapasite paylaşıldı.";
+            // --- SMART MATCHING ENGINE INTEGRATION ---
+            const matchData = findBestMatch(description || 'Bilinmiyor', source || 'Bilinmiyor');
+            
+            result.partner = matchData.buyer;
+            
+            // Set message and icons based on match score
+            if (matchData.matchScore >= 85) {
+                result.message = "Mükemmel Uyum! %100 Kapalı Çevrim Geri Dönüşüm Seçeneği.";
+                result.icon = Recycle;
+                result.colorClass = "text-emerald-500 bg-emerald-50";
+            } else if (matchData.matchScore >= 70) {
+                result.message = "İyi Uyum. Alternatif Hammadde Olarak Değerlendirilebilir.";
+                result.icon = Flame;
+                result.colorClass = "text-orange-500 bg-orange-50";
+            } else {
+                result.message = "Genel Geri Dönüşüm Kapsamında Değerlendirilecek.";
                 result.icon = Truck;
                 result.colorClass = "text-blue-500 bg-blue-50";
             }
-            else if (category === 'Energy' || category === 'Water') {
-                result.partner = "Bandırma Sera Bölgesi";
-                result.message = "Enerji Transfer Hattı Onaylandı.";
-                result.icon = Flame;
-                result.colorClass = "text-orange-500 bg-orange-50";
-            }
-            else {
-                result.partner = "Marmara Geri Dönüşüm Tesisi";
-                result.message = "Hammadde İkamesi Tamamlandı! Geri dönüşüm sürecine alındı.";
-                result.icon = Recycle;
-                result.colorClass = "text-emerald-500 bg-emerald-50";
-            }
-
-            const matchScore = Math.floor(Math.random() * (95 - 65 + 1)) + 65;
 
             result.newListing = {
                 id: Date.now(),
@@ -62,11 +102,11 @@ export default function AddListingModal({ onClose, onMatchConfirmed }) {
                 amount: `${amount} ${unit}`,
                 source: source || 'Kullanıcı Tesisi',
                 category: category,
-                tag: 'Yeni İlan',
-                matchScore: matchScore,
-                aiMatch: true,
-                buyer: result.partner,
-                buyerUse: 'Simbiyoz Odaklı',
+                tag: matchData.aiMatch ? 'Yüksek Uyum' : 'Yeni İlan',
+                matchScore: matchData.matchScore,
+                aiMatch: matchData.aiMatch,
+                buyer: matchData.buyer,
+                buyerUse: matchData.buyerUse,
                 income: `${result.totalEconomicValue.toLocaleString()} TL`,
                 co2: (numAmount * 0.4).toFixed(1) + ' Ton'
             };
@@ -91,16 +131,19 @@ export default function AddListingModal({ onClose, onMatchConfirmed }) {
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">Kategori</label>
-                                <select value={category} onChange={e => setCategory(e.target.value)} className="w-full bg-slate-50 border border-gray-200 text-slate-800 text-sm rounded-xl px-4 py-3 outline-none focus:border-emerald-400">
+                                <select 
+                                    value={category} 
+                                    onChange={e => {
+                                        setCategory(e.target.value);
+                                        setDescription(''); // Reset material when category changes
+                                    }} 
+                                    className="w-full bg-slate-50 border border-gray-200 text-slate-800 text-sm rounded-xl px-4 py-3 outline-none focus:border-emerald-400"
+                                >
                                     <option value="Metal">Metal</option>
-                                    <option value="Textile">Textile</option>
-                                    <option value="Plastic">Plastic</option>
-                                    <option value="Chemical">Chemical</option>
-                                    <option value="Wood">Wood</option>
-                                    <option value="Energy">Energy</option>
-                                    <option value="Water">Water</option>
-                                    <option value="Logistics">Logistics</option>
-                                    <option value="Storage">Storage</option>
+                                    <option value="Tekstil">Tekstil</option>
+                                    <option value="Plastik">Plastik</option>
+                                    <option value="Kimyasal">Kimyasal</option>
+                                    <option value="Ahşap">Ahşap</option>
                                 </select>
                             </div>
                             <div>
@@ -129,14 +172,81 @@ export default function AddListingModal({ onClose, onMatchConfirmed }) {
                             </div>
                         </div>
 
-                        <div>
-                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">Kaynak / Konum</label>
-                            <input type="text" value={source} onChange={e => setSource(e.target.value)} placeholder="Örn: Kocaeli Tesis" required className="w-full bg-slate-50 border border-gray-200 text-slate-800 text-sm rounded-xl px-4 py-3 outline-none focus:border-emerald-400" />
+                        <div className="relative" ref={sourceRef}>
+                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">Kaynak / Konum (Tesis Seçimi)</label>
+                            <div
+                                onClick={() => setIsSourceOpen(!isSourceOpen)}
+                                className="w-full bg-slate-50 border border-gray-200 text-slate-800 text-sm rounded-xl px-4 py-3 cursor-pointer flex justify-between items-center transition-shadow hover:shadow-md"
+                            >
+                                <span className={source ? "text-slate-800 font-medium" : "text-slate-400"}>
+                                    {source || "Sistemden tesis arayın veya seçin..."}
+                                </span>
+                                <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isSourceOpen ? 'rotate-180' : ''}`} />
+                            </div>
+
+                            {isSourceOpen && (
+                                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="p-2 border-b border-slate-50">
+                                        <div className="relative">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />
+                                            <input
+                                                type="text"
+                                                autoFocus
+                                                placeholder="Tesis veya şehir ara..."
+                                                value={sourceSearch}
+                                                onChange={e => setSourceSearch(e.target.value)}
+                                                className="w-full bg-slate-50/50 border-none text-sm rounded-lg pl-9 pr-3 py-2.5 outline-none focus:ring-2 focus:ring-emerald-400 transition-all shadow-inner"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="max-h-48 overflow-y-auto p-1">
+                                        {filteredFacilities.length > 0 ? (
+                                            filteredFacilities.map(f => (
+                                                <div
+                                                    key={f.id}
+                                                    onClick={() => {
+                                                        setSource(`${f.name} (${f.city})`);
+                                                        setIsSourceOpen(false);
+                                                        setSourceSearch('');
+                                                    }}
+                                                    className="px-3 py-2.5 hover:bg-emerald-50 rounded-lg cursor-pointer transition-colors flex justify-between items-center group"
+                                                >
+                                                    <span className="font-medium text-slate-700 text-sm group-hover:text-emerald-700">{f.name}</span>
+                                                    <span className="text-xs text-slate-500 bg-slate-100 group-hover:bg-emerald-100 px-2 py-0.5 rounded-md transition-colors">{f.city}</span>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="px-4 py-4 text-sm text-slate-500 text-center flex flex-col items-center">
+                                                <Search className="h-6 w-6 text-slate-300 mb-2" />
+                                                <span>Sonuç bulunamadı</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div>
                             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">Açıklama / Malzeme Adı</label>
-                            <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Örn: Alüminyum Hurda" required className="w-full bg-slate-50 border border-gray-200 text-slate-800 text-sm rounded-xl px-4 py-3 outline-none focus:border-emerald-400" />
+                            <div className="relative group">
+                                <select
+                                    value={description}
+                                    onChange={e => setDescription(e.target.value)}
+                                    required
+                                    className="w-full bg-slate-50 border border-gray-200 text-slate-800 font-medium text-sm rounded-xl px-4 py-3 outline-none focus:border-emerald-400 appearance-none hover:shadow-md transition-shadow cursor-pointer"
+                                    style={{ paddingRight: '2.5rem' }}
+                                >
+                                    <option value="" disabled className="text-slate-400 font-normal">Sistemde tanımlı malzeme seçin...</option>
+                                    {MATERIALS.filter(cat => cat.category === category).map(cat => (
+                                        <optgroup key={cat.category} label={'── ' + cat.category.toUpperCase() + ' ──'} className="font-bold text-slate-500 bg-slate-50">
+                                            {cat.items.map(item => (
+                                                <option key={item} value={item} className="text-slate-800 font-medium bg-white py-1">{item}</option>
+                                            ))}
+                                        </optgroup>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none group-hover:text-emerald-500 transition-colors" />
+                            </div>
                         </div>
 
                         <div className="flex gap-3 mt-4">

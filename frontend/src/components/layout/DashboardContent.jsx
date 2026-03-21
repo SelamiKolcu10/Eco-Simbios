@@ -10,6 +10,8 @@ const mockNotifications = [
 export function DashboardContent({ activeSection, children }) {
     const [showNotifications, setShowNotifications] = useState(false);
     const notifRef = useRef(null);
+    const scrollRef = useRef(null);
+    const scrollPositions = useRef({});
 
     useEffect(() => {
         function handleClickOutside(e) {
@@ -20,6 +22,18 @@ export function DashboardContent({ activeSection, children }) {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Restore scroll position when active section changes
+    useEffect(() => {
+        if (scrollRef.current) {
+            const savedScroll = scrollPositions.current[activeSection] || 0;
+            scrollRef.current.scrollTo({ top: savedScroll, behavior: 'instant' });
+        }
+    }, [activeSection]);
+
+    const handleScroll = (e) => {
+        scrollPositions.current[activeSection] = e.target.scrollTop;
+    };
 
     const getPageTitle = (id) => {
         switch (id) {
@@ -46,7 +60,7 @@ export function DashboardContent({ activeSection, children }) {
     };
 
     return (
-        <div className="flex-1 flex flex-col overflow-auto bg-background">
+        <div ref={scrollRef} onScroll={handleScroll} className="flex-1 flex flex-col overflow-auto bg-background">
             {/* Content Container */}
             <div className="p-4 md:p-8 flex-1 flex flex-col bg-[#F8F9FA]">
                 <div className="max-w-7xl w-full mx-auto flex-1">

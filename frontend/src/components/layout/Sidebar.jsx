@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { cn } from "../../lib/utils"
 import {
     LayoutDashboard,
@@ -11,6 +11,8 @@ import {
     ChevronLeft,
     ChevronRight,
     Leaf,
+    Sun,
+    Moon
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { Badge } from "../ui/badge"
@@ -52,6 +54,31 @@ const navItems = [
 
 export function Sidebar({ activeSection, onNavigate, onLogout }) {
     const [collapsed, setCollapsed] = useState(false)
+    const [isDark, setIsDark] = useState(false)
+
+    useEffect(() => {
+        // Check for saved user preference or system preference
+        const isDarkMode = localStorage.getItem('theme') === 'dark' ||
+            (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        
+        setIsDark(isDarkMode);
+        if (isDarkMode) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    }, [])
+
+    const toggleTheme = () => {
+        setIsDark(!isDark);
+        if (!isDark) {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        }
+    }
 
     return (
         <TooltipProvider delayDuration={0}>
@@ -74,19 +101,30 @@ export function Sidebar({ activeSection, onNavigate, onLogout }) {
                 </button>
 
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 h-28 shrink-0">
+                <div className="flex items-center justify-between p-6 h-28 shrink-0 relative">
                     <div className={cn("flex items-center gap-3", collapsed && "justify-center w-full")}>
-                        <div className="flex shrink-0 h-12 w-12 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/30">
-                            <Leaf className="h-6 w-6 text-primary-foreground" />
+                        <div className="flex shrink-0 h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/30">
+                            <Leaf className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground" />
                         </div>
                         {!collapsed && (
                             <div className="flex flex-col overflow-hidden">
-                                <span className="text-2xl font-black tracking-tight text-sidebar-foreground truncate pr-2">
+                                <span className="text-xl md:text-2xl font-black tracking-tight text-sidebar-foreground truncate pr-2">
                                     Eko-<span className="text-primary">Simbiyoz</span>
                                 </span>
                             </div>
                         )}
                     </div>
+                    
+                    {/* Dark Mode Toggle */}
+                    {!collapsed && (
+                        <button
+                            onClick={toggleTheme}
+                            className="absolute right-4 top-10 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                            aria-label="Toggle Dark Mode"
+                        >
+                            {isDark ? <Sun className="h-4 w-4 text-orange-400" /> : <Moon className="h-4 w-4 text-indigo-500" />}
+                        </button>
+                    )}
                 </div>
 
                 {/* Navigation */}
