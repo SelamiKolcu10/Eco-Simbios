@@ -6,8 +6,7 @@ import Dashboard from './components/dashboard/Dashboard';
 import DiscoveryPage from './components/dashboard/DiscoveryPage';
 import LiveMap from './components/map/LiveMap';
 import SocialImpact from './components/social/SocialImpact';
-import CarbonLedger from './components/carbon/CarbonLedger';
-import Settings from './components/settings/Settings';
+
 import Market from './components/market/Market';
 import MatchmakingEngine from './components/matchmaking/MatchmakingEngine';
 import LoginModal from './components/shared/LoginModal';
@@ -79,8 +78,7 @@ export default function App() {
                     {activeSection === 'discovery' && <DiscoveryPage onNavigate={setActiveSection} />}
                     {activeSection === 'map' && <LiveMap />}
                     {activeSection === 'social' && <SocialImpact />}
-                    {activeSection === 'carbon' && <CarbonLedger />}
-                    {activeSection === 'settings' && <Settings />}
+
                     {activeSection === 'market' && <Market onMatch={handleMatch} matchedIds={matchedIds} hasProfile={hasProfile} onNavigate={setActiveSection} pendingMatch={pendingMatch} setPendingMatch={setPendingMatch} />}
                     {activeSection === 'matchmaking' && <MatchmakingEngine onRegister={() => setHasProfile(true)} onNavigate={setActiveSection} />}
                 </div>

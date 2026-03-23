@@ -39,17 +39,7 @@ const navItems = [
         id: "social",
         label: "Sosyal Etki",
         icon: <Heart className="h-5 w-5" />,
-    },
-    {
-        id: "carbon",
-        label: "Karbon Defteri",
-        icon: <BookOpen className="h-5 w-5" />,
-    },
-    {
-        id: "settings",
-        label: "Saha",
-        icon: <Compass className="h-5 w-5" />,
-    },
+    }
 ]
 
 export function Sidebar({ activeSection, onNavigate, onLogout }) {

@@ -41,8 +41,8 @@ export function DashboardContent({ activeSection, children }) {
             case 'market': return 'Simbiyoz Pazarı';
             case 'map': return 'Canlı Harita';
             case 'social': return 'Sosyal Etki';
-            case 'carbon': return 'Karbon Defteri';
-            case 'settings': return 'Saha & Ayarlar';
+
+
             default: return 'Genel Bakış';
         }
     };
@@ -53,8 +53,8 @@ export function DashboardContent({ activeSection, children }) {
             case 'market': return 'Endüstriyel atık eşleştirmeleri';
             case 'map': return 'Tesisler arası lojistik ağ';
             case 'social': return 'Yeşil istihdam ve yerel etkiler';
-            case 'carbon': return 'ESG ve yeşil mutabakat uyumu';
-            case 'settings': return 'Platform tercihleri ve veri sensörleri';
+
+
             default: return 'Sistem Özeti';
         }
     };

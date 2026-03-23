@@ -24,8 +24,10 @@ export default function LiveMap() {
 
         cities.forEach(c => {
             const fs = [], gs = [];
-            for (let i = 0; i < 10; i++) fs.push({ id: gid++, lat: c.lat + (Math.random() - .5) * .1, lng: c.lng + (Math.random() - .5) * .1 });
-            for (let i = 0; i < 15; i++) gs.push({ id: gid++, lat: c.lat + (Math.random() - .5) * .16, lng: c.lng + (Math.random() - .5) * .16 });
+            const cx = c.lat + (c.offLat || 0);
+            const cy = c.lng + (c.offLng || 0);
+            for (let i = 0; i < 10; i++) fs.push({ id: gid++, lat: cx + (Math.random() - .5) * .1, lng: cy + (Math.random() - .5) * .1 });
+            for (let i = 0; i < 15; i++) gs.push({ id: gid++, lat: cx + (Math.random() - .5) * .16, lng: cy + (Math.random() - .5) * .16 });
 
             L.marker([c.lat + .06, c.lng], {
                 icon: L.divIcon({ className: '', html: `<div style="background:rgba(99,102,241,.85);color:#fff;font-size:8px;font-weight:700;padding:2px 7px;border-radius:8px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.4)">${c.name.toUpperCase()}</div>`, iconSize: [100, 18], iconAnchor: [50, 9] })

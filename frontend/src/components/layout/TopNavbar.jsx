@@ -7,9 +7,7 @@ export function TopNavbar({ activeSection, setActiveSection }) {
         { id: 'market', label: 'Simbiyoz Pazarı' },
         { id: 'matchmaking', label: 'Eşleştirme Motoru' },
         { id: 'map', label: 'Canlı Harita' },
-        { id: 'social', label: 'Sosyal Etki' },
-        { id: 'carbon', label: 'Karbon Defteri' },
-        { id: 'settings', label: 'Saha' }
+        { id: 'social', label: 'Sosyal Etki' }
     ];
 
     return (
