@@ -224,26 +224,14 @@ export function Sidebar({ activeSection, onNavigate, onLogout }) {
                                     </AvatarFallback>
                                 </Avatar>
                                 {!collapsed && (
-                                    <>
-                                        <div className="flex-1 overflow-hidden">
-                                            <p className="truncate text-sm font-semibold text-sidebar-foreground">
-                                                Yönetici Kullanıcı
-                                            </p>
-                                            <p className="truncate text-xs text-sidebar-foreground/50">
-                                                Yönetici Paneli
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                onLogout();
-                                            }}
-                                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors hover:bg-sidebar-border hover:text-red-500"
-                                            title="Çıkış Yap"
-                                        >
-                                            <LogOut className="h-4 w-4" />
-                                        </button>
-                                    </>
+                                    <div className="flex-1 overflow-hidden">
+                                        <p className="truncate text-sm font-semibold text-sidebar-foreground">
+                                            Yönetici Kullanıcı
+                                        </p>
+                                        <p className="truncate text-xs text-sidebar-foreground/50">
+                                            Yönetici Paneli
+                                        </p>
+                                    </div>
                                 )}
                             </div>
                         </TooltipTrigger>
@@ -251,13 +239,6 @@ export function Sidebar({ activeSection, onNavigate, onLogout }) {
                             <TooltipContent side="right" className="z-50">
                                 <p className="font-semibold">Yönetici Kullanıcı</p>
                                 <p className="text-xs text-muted-foreground mb-2">Yönetici Paneli</p>
-                                <button
-                                    onClick={onLogout}
-                                    className="w-full flex items-center justify-center gap-2 rounded-md bg-red-100 dark:bg-red-900/30 px-2 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 transition-colors hover:bg-red-200 dark:hover:bg-red-900/50"
-                                >
-                                    <LogOut className="h-3 w-3" />
-                                    Çıkış Yap
-                                </button>
                             </TooltipContent>
                         )}
                     </Tooltip>

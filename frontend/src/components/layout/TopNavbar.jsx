@@ -44,12 +44,9 @@ export function TopNavbar({ activeSection, setActiveSection }) {
                     ))}
                 </nav>
 
-                {/* Right Actions */}
-                <div className="flex items-center gap-4 ml-8">
-                    <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium border rounded-lg hover:bg-muted transition-colors text-foreground">
-                        <LogOut className="h-4 w-4" />
-                        <span className="hidden sm:inline">Çıkış Yap</span>
-                    </button>
+                {/* Right Actions Slot (Empty for now to keep layout) */}
+                <div className="flex items-center gap-4 ml-8 invisible">
+                    <div className="w-20"></div>
                 </div>
                 
             </div>

@@ -12,7 +12,11 @@ import MatchmakingEngine from './components/matchmaking/MatchmakingEngine';
 import LoginModal from './components/shared/LoginModal';
 
 export default function App() {
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [isLoggedIn, setIsLoggedIn] = useState(true);
+    const [favorites, setFavorites] = useState(() => {
+        const saved = localStorage.getItem('eco-simbios-favorites');
+        return saved ? new Set(JSON.parse(saved)) : new Set();
+    });
     const [activeSection, setActiveSectionState] = useState(() => {
         return window.location.hash.replace('#', '') || 'dashboard';
     });
@@ -27,6 +31,10 @@ export default function App() {
             window.history.pushState(null, '', `#${section}`);
         }
     };
+
+    useEffect(() => {
+        localStorage.setItem('eco-simbios-favorites', JSON.stringify([...favorites]));
+    }, [favorites]);
 
     useEffect(() => {
         const handlePopState = () => {
@@ -62,9 +70,19 @@ export default function App() {
         setMatchedIds(prev => new Set([...prev, itemId]));
     };
 
-    if (!isLoggedIn) {
-        return <LoginModal onLogin={handleLogin} />;
-    }
+    const toggleFavorite = (id) => {
+        setFavorites(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    // Login bypass for development as requested
+    // if (!isLoggedIn) {
+    //     return <LoginModal onLogin={handleLogin} />;
+    // }
 
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-[#F8F9FA] font-sans text-foreground">
@@ -79,7 +97,7 @@ export default function App() {
                     {activeSection === 'map' && <LiveMap />}
                     {activeSection === 'social' && <SocialImpact />}
 
-                    {activeSection === 'market' && <Market onMatch={handleMatch} matchedIds={matchedIds} hasProfile={hasProfile} onNavigate={setActiveSection} pendingMatch={pendingMatch} setPendingMatch={setPendingMatch} />}
+                    {activeSection === 'market' && <Market onMatch={handleMatch} matchedIds={matchedIds} hasProfile={hasProfile} onNavigate={setActiveSection} pendingMatch={pendingMatch} setPendingMatch={setPendingMatch} favorites={favorites} onToggleFavorite={toggleFavorite} />}
                     {activeSection === 'matchmaking' && <MatchmakingEngine onRegister={() => setHasProfile(true)} onNavigate={setActiveSection} />}
                 </div>
             </DashboardContent>

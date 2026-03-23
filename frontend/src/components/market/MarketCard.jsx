@@ -1,7 +1,8 @@
 import { tagStyles, typeStyles } from '../../data/marketListings';
 import { MapPin, Clock, Weight, Heart, BrainCircuit } from 'lucide-react';
+import { cn } from "../../lib/utils";
 
-export default function MarketCard({ item, onClick, isMatched }) {
+export default function MarketCard({ item, onClick, isMatched, isFavorited, onToggleFavorite }) {
     const isHighMatch = item.matchScore >= 80;
     const scoreColor = isHighMatch ? 'text-[#0c4e33]' : 'text-amber-500';
     const barColor = isHighMatch ? 'bg-[#0ed3cf]' : 'bg-amber-400';
@@ -31,8 +32,16 @@ export default function MarketCard({ item, onClick, isMatched }) {
                 </div>
 
                 {/* Top Right Heart */}
-                <button className="absolute top-3 right-3 w-7 h-7 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 transition-colors shadow-sm">
-                    <Heart className="h-3.5 w-3.5" />
+                <button 
+                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
+                    className={cn(
+                        "absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm border",
+                        isFavorited 
+                            ? "bg-red-50 border-red-100 text-red-500 scale-110" 
+                            : "bg-white/90 backdrop-blur border-slate-100 text-slate-400 hover:text-red-500"
+                    )}
+                >
+                    <Heart className={cn("h-4 w-4", isFavorited && "fill-current")} />
                 </button>
 
                 {/* Bottom Right AI Badge */}
@@ -65,8 +74,16 @@ export default function MarketCard({ item, onClick, isMatched }) {
                             AI Önerisi
                         </div>
                     )}
-                    <button className="w-7 h-7 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 transition-colors">
-                        <Heart className="h-3.5 w-3.5" />
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
+                        className={cn(
+                            "w-8 h-8 rounded-full flex items-center justify-center transition-all border",
+                            isFavorited 
+                                ? "bg-red-50 border-red-100 text-red-500" 
+                                : "bg-slate-50 border-slate-100 text-slate-400 hover:text-red-500"
+                        )}
+                    >
+                        <Heart className={cn("h-4 w-4", isFavorited && "fill-current")} />
                     </button>
                 </div>
             </div>

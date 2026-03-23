@@ -37,9 +37,10 @@ const categories = [
     { id: 'Plastik', icon: 'fa-cube', label: 'Plastik' },
     { id: 'Kimyasal', icon: 'fa-flask', label: 'Kimyasal' },
     { id: 'Ahşap', icon: 'fa-tree', label: 'Ahşap' },
+    { id: 'favorites', icon: 'fa-heart', label: 'Favorilerim' },
 ];
 
-export default function Market({ onMatch, matchedIds, hasProfile, onNavigate, pendingMatch, setPendingMatch }) {
+export default function Market({ onMatch, matchedIds, hasProfile, onNavigate, pendingMatch, setPendingMatch, favorites, onToggleFavorite }) {
     const [listings, setListings] = useState(loadListings);
     const [activeCat, setActiveCat] = useState('all');
     const [search, setSearch] = useState('');
@@ -55,13 +56,20 @@ export default function Market({ onMatch, matchedIds, hasProfile, onNavigate, pe
     }, [listings]);
 
     const filteredItems = useMemo(() => {
-        let items = activeCat === 'all' ? listings : listings.filter(i => i.category === activeCat);
+        let items = listings;
+        
+        if (activeCat === 'favorites') {
+            items = items.filter(i => favorites.has(i.id));
+        } else if (activeCat !== 'all') {
+            items = items.filter(i => i.category === activeCat);
+        }
+
         if (search) {
             const q = search.toLowerCase();
             items = items.filter(i => i.material.toLowerCase().includes(q) || i.source.toLowerCase().includes(q));
         }
         return items;
-    }, [activeCat, search, listings]);
+    }, [activeCat, search, listings, favorites]);
 
     const handleMatchConfirmed = ({ extraEarnings, extraCarbon, newListing }) => {
         if (newListing) {
@@ -82,8 +90,14 @@ export default function Market({ onMatch, matchedIds, hasProfile, onNavigate, pe
             {/* Header Section */}
             <div className="flex flex-col gap-6">
                 <div>
-                    <h3 className="text-2xl font-bold text-slate-800 font-serif mb-2">Endüstriyel Pazar Yeri</h3>
-                    <p className="text-sm text-slate-500 font-serif">Endüstriyel fazlayı döngüsel çözümlerle buluşturun. Doğrulanmış malzemeleri güvenle keşfedin.</p>
+                    <h3 className="text-2xl font-bold text-slate-800 font-serif mb-2">
+                        {activeCat === 'favorites' ? 'Favori İlanlarım' : 'Endüstriyel Pazar Yeri'}
+                    </h3>
+                    <p className="text-sm text-slate-500 font-serif">
+                        {activeCat === 'favorites' 
+                            ? 'Kaydettiğiniz ve takip etmek istediğiniz endüstriyel fırsatlar.' 
+                            : 'Endüstriyel fazlayı döngüsel çözümlerle buluşturun. Doğrulanmış malzemeleri güvenle keşfedin.'}
+                    </p>
                 </div>
 
                 {/* Search & Actions Bar */}
@@ -155,6 +169,8 @@ export default function Market({ onMatch, matchedIds, hasProfile, onNavigate, pe
                                     key={item.id}
                                     item={item}
                                     isMatched={matchedIds?.has(item.id) || false}
+                                    isFavorited={favorites?.has(item.id)}
+                                    onToggleFavorite={() => onToggleFavorite(item.id)}
                                     onClick={() => !matchedIds?.has(item.id) && setSelectedItem(item)}
                                 />
                             ))}

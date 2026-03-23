@@ -37,13 +37,12 @@ export function DashboardContent({ activeSection, children }) {
 
     const getPageTitle = (id) => {
         switch (id) {
-            case 'dashboard': return 'Genel Bakış';
+            case 'dashboard': return 'Endüstriyel Simbiyoz';
             case 'market': return 'Simbiyoz Pazarı';
             case 'map': return 'Canlı Harita';
             case 'social': return 'Sosyal Etki';
 
-
-            default: return 'Genel Bakış';
+            default: return 'Endüstriyel Simbiyoz';
         }
     };
 
