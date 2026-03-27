@@ -4,7 +4,7 @@ import { DashboardContent } from './components/layout/DashboardContent';
 
 import Dashboard from './components/dashboard/Dashboard';
 import DiscoveryPage from './components/dashboard/DiscoveryPage';
-import LiveMap from './components/map/LiveMap';
+import StrategicDashboard from './components/map/StrategicDashboard';
 import SocialImpact from './components/social/SocialImpact';
 
 import Market from './components/market/Market';
@@ -94,7 +94,7 @@ export default function App() {
                 <div className="space-y-6">
                     {activeSection === 'dashboard' && <Dashboard kpiBonus={kpiBonus} onNavigate={setActiveSection} />}
                     {activeSection === 'discovery' && <DiscoveryPage onNavigate={setActiveSection} />}
-                    {activeSection === 'map' && <LiveMap />}
+                    {activeSection === 'map' && <StrategicDashboard />}
                     {activeSection === 'social' && <SocialImpact />}
 
                     {activeSection === 'market' && <Market onMatch={handleMatch} matchedIds={matchedIds} hasProfile={hasProfile} onNavigate={setActiveSection} pendingMatch={pendingMatch} setPendingMatch={setPendingMatch} favorites={favorites} onToggleFavorite={toggleFavorite} />}

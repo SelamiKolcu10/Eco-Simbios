@@ -6,7 +6,7 @@ export function TopNavbar({ activeSection, setActiveSection }) {
         { id: 'dashboard', label: 'Endüstriyel Simbiyoz' },
         { id: 'market', label: 'Simbiyoz Pazarı' },
         { id: 'matchmaking', label: 'Eşleştirme Motoru' },
-        { id: 'map', label: 'Canlı Harita' },
+        { id: 'map', label: 'Stratejik Harita' },
         { id: 'social', label: 'Sosyal Etki' }
     ];
 

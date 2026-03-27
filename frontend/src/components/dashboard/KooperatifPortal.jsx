@@ -17,85 +17,135 @@ import {
 
 /* ───────────────── kooperatif verileri ───────────────── */
 const COOPERATIVES = [
+    // ── Marmara ──────────────────────────────────────────────
     {
-        id: 1,
-        name: 'Eskişehir Kadın Sera Kooperatifi',
-        city: 'Eskişehir',
-        lat: 39.77,
-        lon: 30.52,
-        source: 'Eskişehir Çimento Fabrikası',
-        women: 32,
-        carbon: 840,
-        temp: 28,
-        humidity: 72,
-        soilMoisture: 64,
-        iot: 'Aktif',
-        efficiency: 94,
-        selected: true,
+        id: 1, name: 'Bursa Kadın Tarım Kooperatifi', city: 'Bursa', region: 'Marmara',
+        lat: 40.18, lon: 29.06, source: 'Bursa Tekstil OSB', women: 25,
+        carbon: 620, temp: 26, humidity: 68, soilMoisture: 58, iot: 'Aktif', efficiency: 91, selected: true,
     },
     {
-        id: 2,
-        name: 'Bursa Organik Tarım Kooperatifi',
-        city: 'Bursa',
-        lat: 40.18,
-        lon: 29.06,
-        source: 'Bursa Tekstil OSB',
-        women: 25,
-        carbon: 620,
-        temp: 26,
-        humidity: 68,
-        soilMoisture: 58,
-        iot: 'Aktif',
-        efficiency: 91,
-        selected: false,
+        id: 2, name: 'Yalova Kadın Sera Kooperatifi', city: 'Yalova', region: 'Marmara',
+        lat: 40.63, lon: 29.20, source: 'Yalova Kâğıt Fabrikası', women: 18,
+        carbon: 380, temp: 24, humidity: 72, soilMoisture: 60, iot: 'Aktif', efficiency: 88, selected: false,
     },
     {
-        id: 3,
-        name: 'Kayseri Yeşil Vadi Kooperatifi',
-        city: 'Kayseri',
-        lat: 38.73,
-        lon: 35.48,
-        source: 'Kayseri Demir-Çelik A.Ş.',
-        women: 18,
-        carbon: 510,
-        temp: 24,
-        humidity: 65,
-        soilMoisture: 55,
-        iot: 'Aktif',
-        efficiency: 88,
-        selected: false,
+        id: 3, name: 'Sakarya Ekolojik Sera Kooperatifi', city: 'Sakarya', region: 'Marmara',
+        lat: 40.72, lon: 30.35, source: 'Sakarya Demir-Çelik', women: 22,
+        carbon: 490, temp: 25, humidity: 70, soilMoisture: 62, iot: 'Aktif', efficiency: 89, selected: false,
     },
     {
-        id: 4,
-        name: 'Gaziantep Bereket Kooperatifi',
-        city: 'Gaziantep',
-        lat: 37.06,
-        lon: 37.38,
-        source: 'Gaziantep Cam Sanayi',
-        women: 40,
-        carbon: 960,
-        temp: 30,
-        humidity: 60,
-        soilMoisture: 70,
-        iot: 'Aktif',
-        efficiency: 96,
-        selected: false,
+        id: 4, name: 'Kocaeli Kadın Üretim Kooperatifi', city: 'Kocaeli', region: 'Marmara',
+        lat: 40.82, lon: 29.62, source: 'Kocaeli Otomotiv OSB', women: 30,
+        carbon: 710, temp: 27, humidity: 65, soilMoisture: 55, iot: 'Aktif', efficiency: 93, selected: false,
     },
     {
-        id: 5,
-        name: 'Denizli Pamuk Kooperatifi',
-        city: 'Denizli',
-        lat: 37.77,
-        lon: 29.08,
-        source: 'Denizli Tekstil Fabrikası',
-        women: 22,
-        carbon: 480,
-        temp: 25,
-        humidity: 70,
-        soilMoisture: 62,
-        iot: 'Aktif',
-        efficiency: 89,
-        selected: false,
+        id: 5, name: 'Balıkesir Organik Kadın Kooperatifi', city: 'Balıkesir', region: 'Marmara',
+        lat: 39.70, lon: 27.95, source: 'Balıkesir Gıda Sanayi', women: 16,
+        carbon: 310, temp: 23, humidity: 74, soilMoisture: 64, iot: 'Aktif', efficiency: 86, selected: false,
+    },
+    // ── Ege ──────────────────────────────────────────────────
+    {
+        id: 6, name: 'Denizli Pamuk Kadın Kooperatifi', city: 'Denizli', region: 'Ege',
+        lat: 37.72, lon: 29.15, source: 'Denizli Tekstil Fabrikası', women: 22,
+        carbon: 480, temp: 25, humidity: 70, soilMoisture: 62, iot: 'Aktif', efficiency: 89, selected: false,
+    },
+    {
+        id: 7, name: 'Aydın Zeytin Kadın Kooperatifi', city: 'Aydın', region: 'Ege',
+        lat: 37.80, lon: 27.70, source: 'Aydın Gıda İşleme', women: 30,
+        carbon: 420, temp: 27, humidity: 66, soilMoisture: 58, iot: 'Aktif', efficiency: 92, selected: false,
+    },
+    {
+        id: 8, name: 'İzmir Kadın Sebze Kooperatifi', city: 'İzmir', region: 'Ege',
+        lat: 38.48, lon: 27.30, source: 'İzmir Tekstil Atölyesi', women: 28,
+        carbon: 520, temp: 26, humidity: 68, soilMoisture: 60, iot: 'Aktif', efficiency: 90, selected: false,
+    },
+    {
+        id: 9, name: 'Manisa Üzüm Kadın Kooperatifi', city: 'Manisa', region: 'Ege',
+        lat: 38.58, lon: 27.50, source: 'Manisa Elektrik-Elektronik', women: 19,
+        carbon: 350, temp: 24, humidity: 72, soilMoisture: 64, iot: 'Aktif', efficiency: 87, selected: false,
+    },
+    {
+        id: 10, name: 'Muğla Doğal Ürün Kooperatifi', city: 'Muğla', region: 'Ege',
+        lat: 37.18, lon: 28.42, source: 'Muğla Mermer İşleme', women: 15,
+        carbon: 270, temp: 28, humidity: 63, soilMoisture: 55, iot: 'Aktif', efficiency: 85, selected: false,
+    },
+    // ── İç Anadolu ───────────────────────────────────────────
+    {
+        id: 11, name: 'Eskişehir Kadın Sera Kooperatifi', city: 'Eskişehir', region: 'İç Anadolu',
+        lat: 39.77, lon: 30.52, source: 'Eskişehir Çimento Fabrikası', women: 32,
+        carbon: 840, temp: 28, humidity: 72, soilMoisture: 64, iot: 'Aktif', efficiency: 94, selected: false,
+    },
+    {
+        id: 12, name: 'Kayseri Yeşil Vadi Kooperatifi', city: 'Kayseri', region: 'İç Anadolu',
+        lat: 38.73, lon: 35.48, source: 'Kayseri Demir-Çelik A.Ş.', women: 18,
+        carbon: 510, temp: 24, humidity: 65, soilMoisture: 55, iot: 'Aktif', efficiency: 88, selected: false,
+    },
+    {
+        id: 13, name: 'Konya Kadın Toprak Kooperatifi', city: 'Konya', region: 'İç Anadolu',
+        lat: 37.92, lon: 32.42, source: 'Konya Gıda Entegre', women: 24,
+        carbon: 530, temp: 25, humidity: 67, soilMoisture: 59, iot: 'Aktif', efficiency: 90, selected: false,
+    },
+    {
+        id: 14, name: 'Ankara Kadın Sebze Kooperatifi', city: 'Ankara', region: 'İç Anadolu',
+        lat: 39.88, lon: 32.72, source: 'Ankara Demir-Çelik', women: 20,
+        carbon: 410, temp: 23, humidity: 70, soilMoisture: 60, iot: 'Aktif', efficiency: 87, selected: false,
+    },
+    {
+        id: 15, name: 'Aksaray Organik Kadın Kooperatifi', city: 'Aksaray', region: 'İç Anadolu',
+        lat: 38.40, lon: 34.08, source: 'Aksaray Otomotiv', women: 14,
+        carbon: 295, temp: 26, humidity: 63, soilMoisture: 54, iot: 'Aktif', efficiency: 86, selected: false,
+    },
+    // ── Akdeniz ──────────────────────────────────────────────
+    {
+        id: 16, name: 'Gaziantep Bereket Kooperatifi', city: 'Gaziantep', region: 'Akdeniz',
+        lat: 37.06, lon: 37.38, source: 'Gaziantep Cam Sanayi', women: 40,
+        carbon: 960, temp: 30, humidity: 60, soilMoisture: 70, iot: 'Aktif', efficiency: 96, selected: false,
+    },
+    {
+        id: 17, name: 'Antalya Kadın Sera Kooperatifi', city: 'Antalya', region: 'Akdeniz',
+        lat: 36.88, lon: 30.65, source: 'Antalya Gıda İşleme', women: 28,
+        carbon: 610, temp: 29, humidity: 64, soilMoisture: 67, iot: 'Aktif', efficiency: 93, selected: false,
+    },
+    {
+        id: 18, name: 'Mersin Kadın Üretim Kooperatifi', city: 'Mersin', region: 'Akdeniz',
+        lat: 36.78, lon: 34.55, source: 'Mersin Petrokimya', women: 22,
+        carbon: 490, temp: 27, humidity: 66, soilMoisture: 62, iot: 'Aktif', efficiency: 89, selected: false,
+    },
+    {
+        id: 19, name: 'Adana Tarım Kadın Kooperatifi', city: 'Adana', region: 'Akdeniz',
+        lat: 37.03, lon: 35.25, source: 'Adana Tekstil OSB', women: 26,
+        carbon: 520, temp: 28, humidity: 65, soilMoisture: 60, iot: 'Aktif', efficiency: 91, selected: false,
+    },
+    {
+        id: 20, name: 'Kahramanmaraş Organik Kooperatifi', city: 'Kahramanmaraş', region: 'Akdeniz',
+        lat: 37.60, lon: 36.98, source: 'Kahramanmaraş Tekstil', women: 17,
+        carbon: 345, temp: 26, humidity: 68, soilMoisture: 57, iot: 'Aktif', efficiency: 87, selected: false,
+    },
+    // ── Karadeniz ─────────────────────────────────────────────
+    {
+        id: 21, name: 'Samsun Kadın Tarım Kooperatifi', city: 'Samsun', region: 'Karadeniz',
+        lat: 41.22, lon: 36.10, source: 'Samsun Demir-Çelik', women: 20,
+        carbon: 470, temp: 22, humidity: 75, soilMoisture: 65, iot: 'Aktif', efficiency: 88, selected: false,
+    },
+    {
+        id: 22, name: 'Trabzon Kadın Çay Kooperatifi', city: 'Trabzon', region: 'Karadeniz',
+        lat: 40.98, lon: 39.80, source: 'Trabzon Fındık İşleme', women: 15,
+        carbon: 310, temp: 20, humidity: 80, soilMoisture: 70, iot: 'Aktif', efficiency: 85, selected: false,
+    },
+    {
+        id: 23, name: 'Kastamonu Orman Kooperatifi', city: 'Kastamonu', region: 'Karadeniz',
+        lat: 41.42, lon: 33.85, source: 'Kastamonu Ahşap Sanayi', women: 18,
+        carbon: 370, temp: 21, humidity: 76, soilMoisture: 66, iot: 'Aktif', efficiency: 87, selected: false,
+    },
+    {
+        id: 24, name: 'Ordu Fındık Kadın Kooperatifi', city: 'Ordu', region: 'Karadeniz',
+        lat: 41.02, lon: 37.75, source: 'Ordu Gıda İşleme', women: 23,
+        carbon: 420, temp: 21, humidity: 78, soilMoisture: 68, iot: 'Aktif', efficiency: 89, selected: false,
+    },
+    {
+        id: 25, name: 'Zonguldak Kadın Üretim Kooperatifi', city: 'Zonguldak', region: 'Karadeniz',
+        lat: 41.48, lon: 31.85, source: 'Zonguldak Maden ve Enerji', women: 12,
+        carbon: 265, temp: 20, humidity: 74, soilMoisture: 63, iot: 'Aktif', efficiency: 84, selected: false,
     },
 ];
 
@@ -105,18 +155,68 @@ function TurkeyMap({ selectedId, onSelect }) {
 
     // Coordinate mapping roughly to SVG scale 800x400
     const cityPos = {
-        Eskişehir: { x: 280, y: 170 },
-        Bursa:     { x: 220, y: 140 },
-        Kayseri:   { x: 420, y: 220 },
-        Gaziantep: { x: 500, y: 280 },
-        Denizli:   { x: 200, y: 240 },
+        // Marmara
+        Bursa:      { x: 220, y: 140 },
+        Yalova:     { x: 245, y: 150 },
+        Sakarya:    { x: 295, y: 135 },
+        Kocaeli:    { x: 270, y: 120 },
+        Balıkesir:  { x: 160, y: 175 },
+        // Ege
+        Denizli:    { x: 200, y: 240 },
+        Aydın:      { x: 175, y: 235 },
+        İzmir:      { x: 155, y: 200 },
+        Manisa:     { x: 175, y: 195 },
+        Muğla:      { x: 185, y: 265 },
+        // İç Anadolu
+        Eskişehir:  { x: 280, y: 170 },
+        Kayseri:    { x: 420, y: 220 },
+        Konya:      { x: 335, y: 245 },
+        Ankara:     { x: 345, y: 175 },
+        Aksaray:    { x: 370, y: 230 },
+        // Akdeniz
+        Gaziantep:  { x: 500, y: 280 },
+        Antalya:    { x: 270, y: 285 },
+        Mersin:     { x: 420, y: 280 },
+        Adana:      { x: 450, y: 270 },
+        Kahramanmaraş: { x: 490, y: 265 },
+        // Karadeniz
+        Samsun:     { x: 405, y: 110 },
+        Trabzon:    { x: 500, y: 100 },
+        Kastamonu:  { x: 360, y: 120 },
+        Ordu:       { x: 460, y: 108 },
+        Zonguldak:  { x: 290, y: 110 },
     };
     const factoryPos = {
-        Eskişehir: { x: 330, y: 150 },
-        Bursa:     { x: 190, y: 120 },
-        Kayseri:   { x: 450, y: 190 },
-        Gaziantep: { x: 540, y: 260 },
-        Denizli:   { x: 160, y: 220 },
+        // Marmara
+        Bursa:      { x: 190, y: 120 },
+        Yalova:     { x: 230, y: 132 },
+        Sakarya:    { x: 310, y: 118 },
+        Kocaeli:    { x: 258, y: 105 },
+        Balıkesir:  { x: 145, y: 158 },
+        // Ege
+        Denizli:    { x: 215, y: 225 },
+        Aydın:      { x: 160, y: 220 },
+        İzmir:      { x: 140, y: 185 },
+        Manisa:     { x: 162, y: 180 },
+        Muğla:      { x: 170, y: 250 },
+        // İç Anadolu
+        Eskişehir:  { x: 330, y: 150 },
+        Kayseri:    { x: 450, y: 200 },
+        Konya:      { x: 350, y: 228 },
+        Ankara:     { x: 360, y: 158 },
+        Aksaray:    { x: 385, y: 215 },
+        // Akdeniz
+        Gaziantep:  { x: 520, y: 262 },
+        Antalya:    { x: 255, y: 268 },
+        Mersin:     { x: 435, y: 262 },
+        Adana:      { x: 465, y: 255 },
+        Kahramanmaraş: { x: 505, y: 248 },
+        // Karadeniz
+        Samsun:     { x: 420, y: 95 },
+        Trabzon:    { x: 515, y: 88 },
+        Kastamonu:  { x: 375, y: 105 },
+        Ordu:       { x: 475, y: 93 },
+        Zonguldak:  { x: 305, y: 96 },
     };
 
     // Ambient nodes representing other systems
@@ -475,7 +575,13 @@ const mapPanelStyle = {
 /* ──────────────── Ana Portal Bileşeni ──────────────── */
 export default function KooperatifPortal({ onClose, onNavigate }) {
     const [selectedId, setSelectedId] = useState(1);
+    const [activeRegion, setActiveRegion] = useState('Tümü');
     const selected = COOPERATIVES.find((c) => c.id === selectedId);
+
+    const REGIONS_LIST = ['Tümü', 'Marmara', 'Ege', 'İç Anadolu', 'Akdeniz', 'Karadeniz'];
+    const filtered = activeRegion === 'Tümü'
+        ? COOPERATIVES
+        : COOPERATIVES.filter(c => c.region === activeRegion);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6">
@@ -530,7 +636,23 @@ export default function KooperatifPortal({ onClose, onNavigate }) {
                     <div className="lg:w-1/2 flex flex-col md:flex-row overflow-hidden">
                         {/* Card List */}
                         <div className="md:w-1/2 overflow-y-auto p-4 space-y-3 border-r border-slate-100">
-                            {COOPERATIVES.map((coop) => {
+                            {/* Region Filter Tabs */}
+                            <div className="flex flex-wrap gap-1.5 mb-2">
+                                {REGIONS_LIST.map(r => (
+                                    <button
+                                        key={r}
+                                        onClick={() => { setActiveRegion(r); }}
+                                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-colors ${
+                                            activeRegion === r
+                                                ? 'bg-[#0c4e33] text-white'
+                                                : 'bg-slate-100 text-slate-500 hover:bg-emerald-50 hover:text-emerald-700'
+                                        }`}
+                                    >
+                                        {r}
+                                    </button>
+                                ))}
+                            </div>
+                            {filtered.map((coop) => {
                                 const isActive = coop.id === selectedId;
                                 return (
                                     <button

@@ -1,15 +1,17 @@
 const mongoose = require('mongoose');
+const dns = require('dns');
 
 const connectDB = async () => {
     try {
-        const conn = await mongoose.connect(process.env.MONGO_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
+        // Force Google Public DNS for SRV resolution
+        // (fixes ECONNREFUSED on networks that block SRV queries)
+        dns.setServers(['8.8.8.8', '8.8.4.4']);
 
-        console.log(`MongoDB Connected: ${conn.connection.host}`);
+        const conn = await mongoose.connect(process.env.MONGO_URI);
+
+        console.log(`\n🟢 MongoDB Connected: ${conn.connection.host}\n`);
     } catch (error) {
-        console.error(`Error connecting to MongoDB: ${error.message}`);
+        console.error(`\n🔴 MongoDB Connection Error: ${error.message}\n`);
         process.exit(1);
     }
 };
