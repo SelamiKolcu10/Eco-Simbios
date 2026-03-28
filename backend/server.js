@@ -4,6 +4,8 @@ const dotenv = require('dotenv');
 const connectDB = require('./src/config/db');
 const marketRoutes = require('./src/routes/marketRoutes');
 const facilityRoutes = require('./src/routes/facilityRoutes');
+const authRoutes = require('./src/routes/authRoutes');
+const listingRoutes = require('./src/routes/listingRoutes');
 const errorHandler = require('./src/middlewares/errorHandler');
 
 // Load environment variables
@@ -20,8 +22,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // ─── Routes ───────────────────────────────────────────────
+app.use('/api/auth', authRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/facilities', facilityRoutes);
+app.use('/api/listings', listingRoutes);
+
 
 // Base health-check route
 app.get('/', (req, res) => {

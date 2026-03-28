@@ -2,7 +2,7 @@ import { tagStyles, typeStyles } from '../../data/marketListings';
 import { MapPin, Clock, Weight, Heart, BrainCircuit } from 'lucide-react';
 import { cn } from "../../lib/utils";
 
-export default function MarketCard({ item, onClick, isMatched, isFavorited, onToggleFavorite }) {
+export default function MarketCard({ item, onClick, isMatched, isFavorited, onToggleFavorite, onAIMatchClick }) {
     const isHighMatch = item.matchScore >= 80;
     const scoreColor = isHighMatch ? 'text-[#0c4e33]' : 'text-amber-500';
     const barColor = isHighMatch ? 'bg-[#0ed3cf]' : 'bg-amber-400';
@@ -144,12 +144,21 @@ export default function MarketCard({ item, onClick, isMatched, isFavorited, onTo
                     )}
 
                     {/* Action Button */}
-                    <button 
-                        onClick={onClick}
-                        className="w-full py-2.5 bg-[#0c4e33] hover:bg-[#093b26] text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
-                    >
-                        Detayları Gör
-                    </button>
+                    <div className="flex flex-col gap-2">
+                        <button 
+                            onClick={onClick}
+                            className="w-full py-2.5 bg-white border border-[#0c4e33] text-[#0c4e33] hover:bg-emerald-50 text-xs font-bold rounded-lg transition-colors shadow-sm"
+                        >
+                            Detayları Gör
+                        </button>
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); if (onAIMatchClick) onAIMatchClick(item); }}
+                            className="w-full py-2.5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white text-xs font-bold rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 group"
+                        >
+                            <BrainCircuit className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                            AI Sinerji Bul
+                        </button>
+                    </div>
                 </div>
 
             </div>

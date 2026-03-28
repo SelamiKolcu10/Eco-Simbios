@@ -21,7 +21,11 @@ const MATERIALS = [
 
 ];
 
+import { useAuth } from '../../context/AuthContext';
+
 export default function AddListingModal({ onClose, onMatchConfirmed }) {
+    const { authAxios } = useAuth(); // Get authAxios from Context
+
     const [category, setCategory] = useState('Metal');
     const [type, setType] = useState('Satılık Atık');
     const [amount, setAmount] = useState('');
@@ -52,12 +56,28 @@ export default function AddListingModal({ onClose, onMatchConfirmed }) {
         f.city.toLowerCase().includes(sourceSearch.toLowerCase())
     );
 
-    const simulateMatchProcess = (e) => {
+    const handleListingSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setMatchResult(null);
 
-        setTimeout(() => {
+        try {
+            const numAmount = parseFloat(amount) || 100;
+
+            // 1. Post real data to the backend via authAxios
+            const payload = {
+                category,
+                type,
+                wasteType: description || 'Bilinmiyor',
+                description: `${source || 'Kullanıcı Tesisi'} tarafından eklenen ${amount} ${unit} ${description || 'malzeme'}`,
+                amount: numAmount,
+                energyValue: numAmount * 1.5, // Arbitrary calculation for energy
+                status: 'active'
+            };
+            const res = await authAxios.post('http://localhost:5000/api/listings', payload);
+            const dbListing = res.data.data;
+
+            // 2. Generate match result UI logic
             let result = {
                 partner: "",
                 message: "",
@@ -68,19 +88,14 @@ export default function AddListingModal({ onClose, onMatchConfirmed }) {
                 colorClass: ""
             };
 
-            const numAmount = parseFloat(amount) || 100;
-
-            // Financial calculations based on amount (e.g. tons)
-            result.disposalCost = numAmount * 850; // Mock 850 TL/ton saved from landfill taxes
-            result.materialSaving = numAmount * 5000 * 0.40; // Mock 40% cheaper than new raw material
+            result.disposalCost = numAmount * 850; 
+            result.materialSaving = numAmount * 5000 * 0.40; 
             result.totalEconomicValue = result.disposalCost + result.materialSaving;
 
-            // --- SMART MATCHING ENGINE INTEGRATION ---
+            // SMART MATCHING ENGINE INTEGRATION
             const matchData = findBestMatch(description || 'Bilinmiyor', source || 'Bilinmiyor');
-            
             result.partner = matchData.buyer;
             
-            // Set message and icons based on match score
             if (matchData.matchScore >= 85) {
                 result.message = "Mükemmel Uyum! %100 Kapalı Çevrim Geri Dönüşüm Seçeneği.";
                 result.icon = Recycle;
@@ -95,13 +110,14 @@ export default function AddListingModal({ onClose, onMatchConfirmed }) {
                 result.colorClass = "text-blue-500 bg-blue-50";
             }
 
+            // Map DB object to Frontend MarketCard format
             result.newListing = {
-                id: Date.now(),
-                type: type,
-                material: description || 'Yeni Sinerji İlanı',
-                amount: `${amount} ${unit}`,
-                source: source || 'Kullanıcı Tesisi',
-                category: category,
+                id: dbListing._id,
+                type: dbListing.type || type,
+                material: dbListing.wasteType || description || 'Yeni Sinerji İlanı',
+                amount: `${dbListing.amount || amount} ${unit}`,
+                source: dbListing.createdBy?.name || source || 'Kullanıcı Tesisi',
+                category: dbListing.category || category,
                 tag: matchData.aiMatch ? 'Yüksek Uyum' : 'Yeni İlan',
                 matchScore: matchData.matchScore,
                 aiMatch: matchData.aiMatch,
@@ -112,9 +128,14 @@ export default function AddListingModal({ onClose, onMatchConfirmed }) {
             };
 
             setMatchResult(result);
+        } catch (error) {
+            console.error("Listing creation failed:", error);
+            alert("İlan eklenirken bir hata oluştu.");
+        } finally {
             setLoading(false);
-        }, 1500);
+        }
     };
+
 
     return (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -127,7 +148,7 @@ export default function AddListingModal({ onClose, onMatchConfirmed }) {
                 </div>
 
                 {!matchResult ? (
-                    <form onSubmit={simulateMatchProcess} className="space-y-5">
+                    <form onSubmit={handleListingSubmit} className="space-y-5">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">Kategori</label>

@@ -66,9 +66,17 @@ export default function MatchmakingEngine({ onRegister, onNavigate }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        alert('Simbiyoz Ağı kaydınız başarıyla oluşturuldu! Şimdi eşleşme işlemine dönebilirsiniz.');
-        if (onRegister) onRegister();
-        if (onNavigate) onNavigate('market');
+        alert('Tesis bilgilerinizi aldık. Lütfen güvenlik amacıyla parolanızı belirleyerek kaydı tamamlayın.');
+        
+        // Pass the pre-filled data to the registration component
+        if (onNavigate) {
+            onNavigate('register', {
+                name: formData.companyName,
+                email: formData.email,
+                sector: formData.sector,
+                // Matchmaking specific data if needed later
+            });
+        }
     };
 
     return (

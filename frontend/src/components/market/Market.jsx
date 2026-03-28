@@ -1,34 +1,74 @@
 import { useState, useMemo, useEffect } from 'react';
-import { marketListings as rawListings } from '../../data/marketListings';
+import axios from 'axios';
 import { applySmartMatching } from '../../data/matchingEngine';
 import MarketCard from './MarketCard';
 import MarketModal from './MarketModal';
 import AddListingModal from './AddListingModal';
+import AIMatchModal from './AIMatchModal';
+import { useAuth } from '../../context/AuthContext';
 
-// Apply smart matching to all default listings
-const marketListings = applySmartMatching(rawListings);
+const API_URL = 'http://localhost:5000/api/listings';
 
-const STORAGE_KEY = 'eco-simbios-listings-v5';
+const getImageForMaterial = (material, category) => {
+    const text = (material || '').toLowerCase();
+    
+    // Metal
+    if (text.includes('alüminyum')) return '/images/aluminyum-hurda.jpg';
+    if (text.includes('bakır')) return '/images/bakir-kablo.jpg';
+    if (text.includes('pirinç')) return '/images/sari-pirinc.jpg';
+    if (text.includes('çelik') || text.includes('metal')) return '/images/celik-talasi.jpg';
+    if (category === 'Metal') return '/images/metal-atik.jpg';
 
-// Auto-cleanup: remove all old cache versions
-['eco-simbios-listings', 'eco-simbios-listings-v1', 'eco-simbios-listings-v2', 'eco-simbios-listings-v3', 'eco-simbios-listings-v4'].forEach(k => {
-    try { localStorage.removeItem(k); } catch {}
+    // Tekstil
+    if (text.includes('pamuk')) return '/images/pamuklu-kirpinti.jpg';
+    if (text.includes('polyester')) return '/images/polyester-kumas.jpg';
+    if (text.includes('naylon')) return '/images/naylon-iplik.jpg';
+    if (category === 'Tekstil') return '/images/polyester-kumas.jpg';
+
+    // Plastik
+    if (text.includes('pet')) return '/images/pet-sise.jpg';
+    if (text.includes('hdpe') || text.includes('bidon')) return '/images/hdpe-bidon.jpg';
+    if (text.includes('pvc')) return '/images/pvc-boru.jpg';
+    if (category === 'Plastik') return '/images/pet-sise.jpg';
+
+    // Kimyasal
+    if (text.includes('yağ')) return '/images/atik-yag.jpg';
+    if (text.includes('çözücü') || text.includes('solvent')) return '/images/cozucu.jpg';
+    if (text.includes('boya')) return '/images/boya-camuru.jpg';
+    if (category === 'Kimyasal') return '/images/cozucu.jpg';
+
+    // Ahşap
+    if (text.includes('palet')) return '/images/ahsap-palet.jpg';
+    if (text.includes('mdf')) return '/images/mdf-tozu.jpg';
+    if (text.includes('talaş')) return '/images/talas.jpg';
+    if (category === 'Ahşap') return '/images/ahsap-palet.jpg';
+
+    // Organik / Diğer
+    if (text.includes('organik') || category === 'Organik') return '/images/organik-atik.jpg';
+
+    return '/images/metal-atik.jpg'; // Universal fallback
+};
+
+// Helper to transform backend listing format to frontend MarketCard format
+const transformListing = (item) => ({
+    id: item._id,
+    type: item.type || 'Satılık Atık',
+    material: item.wasteType || item.description || 'Bilinmeyen Malzeme',
+    amount: `${item.amount || 0} kg`,
+    source: item.createdBy?.name || 'Anonim Tesis',
+    location: item.createdBy?.region || 'Belirtilmemiş',
+    category: item.category || 'Diğer',
+    tag: item.status === 'active' ? 'Yeni İlan' : '',
+    matchScore: Math.floor(Math.random() * 40) + 50, // Simulated match score for demo
+    aiMatch: false,
+    buyer: 'Sistem Önerisi Aranıyor',
+    buyerUse: 'Geri Dönüşüm',
+    income: `~${((item.amount || 0) * 1.5).toLocaleString()} TL`, 
+    co2: `${((item.amount || 0) * 0.4 / 1000).toFixed(1)} Ton`,
+    createdAt: item.createdAt,
+    image: getImageForMaterial(item.wasteType, item.category)
 });
 
-function loadListings() {
-    try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            // Filter: keep only custom listings that don't clash with defaults
-            const defaultIds = new Set(marketListings.map(i => i.id));
-            const defaultMaterials = new Set(marketListings.map(i => i.material));
-            const customListings = parsed.filter(i => !defaultIds.has(i.id) && !defaultMaterials.has(i.material));
-            return [...customListings, ...marketListings];
-        }
-    } catch { /* ignore parse errors */ }
-    return marketListings;
-}
 
 const categories = [
     { id: 'all', icon: 'fa-layer-group', label: 'Tümü' },
@@ -41,19 +81,34 @@ const categories = [
 ];
 
 export default function Market({ onMatch, matchedIds, hasProfile, onNavigate, pendingMatch, setPendingMatch, favorites, onToggleFavorite }) {
-    const [listings, setListings] = useState(loadListings);
+    const [listings, setListings] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [activeCat, setActiveCat] = useState('all');
     const [search, setSearch] = useState('');
     const [selectedItem, setSelectedItem] = useState(null);
+    const [aiTargetItem, setAiTargetItem] = useState(null);
     const [showAddListing, setShowAddListing] = useState(false);
 
+    const { isLoggedIn } = useAuth();
+
     useEffect(() => {
-        const defaultIds = new Set(marketListings.map(i => i.id));
-        const customListings = listings.filter(i => !defaultIds.has(i.id));
-        if (customListings.length > 0) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(customListings));
-        }
-    }, [listings]);
+        const fetchListings = async () => {
+            try {
+                const res = await axios.get(API_URL);
+                if (res.data.success) {
+                    const transformed = res.data.data.map(transformListing);
+                    // Generate scores once using the smart matcher
+                    const matched = applySmartMatching(transformed);
+                    setListings(matched);
+                }
+            } catch (error) {
+                console.error("Failed to load listings", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchListings();
+    }, []);
 
     const filteredItems = useMemo(() => {
         let items = listings;
@@ -81,6 +136,15 @@ export default function Market({ onMatch, matchedIds, hasProfile, onNavigate, pe
         } else if (newListing) {
             // Eşleşmeyi direkt 'Yeni İlan' için kaydet
             onMatch({ extraEarnings, extraCarbon, itemId: newListing.id });
+        }
+    };
+
+    const handleAddListingClick = () => {
+        if (!isLoggedIn) {
+            alert('İlan eklemek veya eşleşme talep etmek için lütfen önce sisteme giriş yapın.');
+            onNavigate('login');
+        } else {
+            setShowAddListing(true);
         }
     };
 
@@ -118,10 +182,10 @@ export default function Market({ onMatch, matchedIds, hasProfile, onNavigate, pe
                     </button>
 
                     <button
-                        onClick={() => setShowAddListing(true)}
-                        className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition-colors text-sm font-bold px-6 py-3 rounded-lg flex items-center gap-2 shadow-sm font-serif"
+                        onClick={handleAddListingClick}
+                        className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition-colors text-sm font-bold px-6 py-3 rounded-lg flex items-center gap-2 shadow-sm font-serif group"
                     >
-                        <span><i className="fa-solid fa-plus text-slate-400"></i></span> İlan Ekle
+                        <span><i className="fa-solid fa-plus text-[#0c4e33] group-hover:scale-110 transition-transform"></i></span> İlan Ekle
                     </button>
                 </div>
             </div>
@@ -172,6 +236,7 @@ export default function Market({ onMatch, matchedIds, hasProfile, onNavigate, pe
                                     isFavorited={favorites?.has(item.id)}
                                     onToggleFavorite={() => onToggleFavorite(item.id)}
                                     onClick={() => !matchedIds?.has(item.id) && setSelectedItem(item)}
+                                    onAIMatchClick={() => setAiTargetItem(item)}
                                 />
                             ))}
                         </div>
@@ -194,6 +259,14 @@ export default function Market({ onMatch, matchedIds, hasProfile, onNavigate, pe
                 <AddListingModal
                     onClose={() => setShowAddListing(false)}
                     onMatchConfirmed={handleMatchConfirmed}
+                />
+            )}
+
+            {aiTargetItem && (
+                <AIMatchModal 
+                    item={aiTargetItem} 
+                    onClose={() => setAiTargetItem(null)} 
+                    onNavigate={onNavigate} 
                 />
             )}
         </div>

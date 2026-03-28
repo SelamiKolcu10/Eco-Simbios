@@ -1,7 +1,10 @@
 import React from 'react';
-import { Leaf, LogOut } from 'lucide-react';
+import { Leaf, LogOut, User } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
-export function TopNavbar({ activeSection, setActiveSection }) {
+export function TopNavbar({ activeSection, setActiveSection, onLogout }) {
+    const { isLoggedIn, facility } = useAuth();
+
     const navItems = [
         { id: 'dashboard', label: 'Endüstriyel Simbiyoz' },
         { id: 'market', label: 'Simbiyoz Pazarı' },
@@ -44,9 +47,30 @@ export function TopNavbar({ activeSection, setActiveSection }) {
                     ))}
                 </nav>
 
-                {/* Right Actions Slot (Empty for now to keep layout) */}
-                <div className="flex items-center gap-4 ml-8 invisible">
-                    <div className="w-20"></div>
+                {/* Right Actions Slot */}
+                <div className="flex items-center justify-end gap-3 ml-8 min-w-[200px]">
+                    {isLoggedIn ? (
+                        <>
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-800 rounded-lg text-sm font-semibold border border-emerald-100/50">
+                                <User className="h-4 w-4 text-emerald-600" />
+                                <span className="max-w-[120px] truncate">{facility?.name || 'Profilim'}</span>
+                            </div>
+                            <button
+                                onClick={onLogout}
+                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Çıkış Yap"
+                            >
+                                <LogOut className="h-5 w-5" />
+                            </button>
+                        </>
+                    ) : (
+                        <button
+                            onClick={() => setActiveSection('login')}
+                            className="bg-[#006A4E] hover:bg-[#00523b] text-white px-5 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm hover:shadow active:scale-95"
+                        >
+                            Giriş Yap
+                        </button>
+                    )}
                 </div>
                 
             </div>
