@@ -4,7 +4,7 @@ import { BrainCircuit, X, MapPin, Building2, CheckCircle2 } from 'lucide-react';
 
 export default function AIMatchModal({ item, onClose, onNavigate }) {
     const [loading, setLoading] = useState(true);
-    const [loadingText, setLoadingText] = useState('Agent-1 verileri analiz ediyor...');
+    const [loadingText, setLoadingText] = useState('Agent-1: Lojistik ve Sektörel Veriler Analiz Ediliyor...');
     const [matches, setMatches] = useState([]);
     const [error, setError] = useState(null);
 
@@ -13,20 +13,11 @@ export default function AIMatchModal({ item, onClose, onNavigate }) {
 
         const performAIMatch = async () => {
             try {
-                // UI Loading sequence
-                setTimeout(() => {
-                    if (isMounted) setLoadingText('Bölgesel eşleşmeler taranıyor...');
-                }, 800);
-
-                setTimeout(() => {
-                    if (isMounted) setLoadingText('Sinerji skoru hesaplanıyor...');
-                }, 1600);
-
                 // Fetch matches from real API
-                // Wait at least 2.5 seconds total for the 'Wow Factor'
+                // Wait exactly 1.5 seconds total for the 'Wow Factor'
                 const [response] = await Promise.all([
-                    axios.get(`http://localhost:5000/api/listings/${item.id}/matches`),
-                    new Promise(resolve => setTimeout(resolve, 2500)) 
+                    axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/listings/${item.id}/matches`),
+                    new Promise(resolve => setTimeout(resolve, 1500)) 
                 ]);
 
                 if (isMounted) {
@@ -127,8 +118,8 @@ export default function AIMatchModal({ item, onClose, onNavigate }) {
                                         )}
                                         
                                         <div className="flex flex-col justify-center items-center p-3 rounded-xl bg-slate-50 border border-slate-100 min-w-[100px]">
-                                            <span className="text-2xl font-black text-slate-800">{match.matchScore}%</span>
-                                            <span className="text-[10px] text-slate-500 font-bold tracking-wider uppercase">Sinerji</span>
+                                            <span className="text-2xl font-black text-slate-800">%{match.matchScore}</span>
+                                            <span className="text-[10px] text-slate-500 font-bold tracking-wider uppercase">Uyum</span>
                                         </div>
 
                                         <div className="flex-1">
@@ -142,7 +133,12 @@ export default function AIMatchModal({ item, onClose, onNavigate }) {
                                                     <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600">{partner.sector}</span>
                                                 )}
                                                 <div className="flex items-center gap-1">
-                                                    <MapPin className="w-3 h-3" /> {partner.region} Bölgesi
+                                                    <MapPin className="w-3 h-3" /> {partner.region} Bölgesi 
+                                                    {match.distance != null && (
+                                                        <span className="ml-2 bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-medium border border-emerald-100">
+                                                            {match.distance} km
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                             

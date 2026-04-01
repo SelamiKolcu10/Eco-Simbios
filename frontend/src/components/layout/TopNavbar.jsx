@@ -1,5 +1,6 @@
 import React from 'react';
 import { Leaf, LogOut, User } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 export function TopNavbar({ activeSection, setActiveSection, onLogout }) {
@@ -18,8 +19,8 @@ export function TopNavbar({ activeSection, setActiveSection, onLogout }) {
             <div className="flex h-16 items-center px-4 md:px-8 max-w-7xl mx-auto w-full justify-between">
                 
                 {/* Logo Area */}
-                <div 
-                    onClick={() => setActiveSection('dashboard')}
+                <Link 
+                    to="/"
                     className="flex items-center gap-2 mr-8 cursor-pointer hover:opacity-80 transition-opacity"
                 >
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#006A4E] text-white">
@@ -28,14 +29,14 @@ export function TopNavbar({ activeSection, setActiveSection, onLogout }) {
                     <span className="text-xl font-bold tracking-tight text-foreground">
                         Eko-<span className="text-[#006A4E]">Simbiyoz</span>
                     </span>
-                </div>
+                </Link>
 
                 {/* Navigation Links */}
                 <nav className="hidden md:flex items-center gap-6 flex-1 justify-center">
                     {navItems.map((item) => (
-                        <button
+                        <Link
                             key={item.id}
-                            onClick={() => setActiveSection(item.id)}
+                            to={item.id === 'dashboard' ? '/' : `/${item.id}`}
                             className={`text-sm font-medium transition-colors hover:text-[#006A4E] ${
                                 activeSection === item.id 
                                 ? 'text-[#006A4E] font-semibold' 
@@ -43,7 +44,7 @@ export function TopNavbar({ activeSection, setActiveSection, onLogout }) {
                             }`}
                         >
                             {item.label}
-                        </button>
+                        </Link>
                     ))}
                 </nav>
 
@@ -64,12 +65,12 @@ export function TopNavbar({ activeSection, setActiveSection, onLogout }) {
                             </button>
                         </>
                     ) : (
-                        <button
-                            onClick={() => setActiveSection('login')}
+                        <Link
+                            to="/login"
                             className="bg-[#006A4E] hover:bg-[#00523b] text-white px-5 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm hover:shadow active:scale-95"
                         >
                             Giriş Yap
-                        </button>
+                        </Link>
                     )}
                 </div>
                 

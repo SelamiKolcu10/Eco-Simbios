@@ -395,7 +395,7 @@ export default function StrategicDashboard() {
         setApiLoading(true);
         // Map UI region id to DB region name
         const regionName = region.name; // e.g. 'Marmara', 'Ege' etc.
-        fetch(`http://localhost:5000/api/facilities?region=${encodeURIComponent(regionName)}`)
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/facilities?region=${encodeURIComponent(regionName)}`)
             .then(r => r.json())
             .then(json => {
                 if (json.success && json.data.length > 0) {

@@ -9,7 +9,7 @@ import axios from 'axios';
 // use the Facility model on the backend.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const API_BASE = 'http://localhost:5000/api/auth';
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/auth';
 
 export const AuthContext = createContext(null);
 

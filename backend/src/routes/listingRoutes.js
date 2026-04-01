@@ -2,6 +2,7 @@ const express = require('express');
 const Listing = require('../models/Listing');
 const Facility = require('../models/Facility');
 const protect = require('../middlewares/authMiddleware');
+const { calculateMatchScore } = require('../utils/aiMatcher');
 
 const router = express.Router();
 
@@ -76,64 +77,18 @@ router.get('/:id/matches', async (req, res) => {
         const ownerFacility = listing.createdBy;
         if (!ownerFacility) return res.status(400).json({ success: false, message: 'İlanın sahibi tesis bulunamadı.' });
 
-        // 1. Find all other facilities in the SAME region
+        // 1. Find all other facilities in the database EXCEPT the source facility
         let potentialPartners = await Facility.find({
-            region: ownerFacility.region,
             _id: { $ne: ownerFacility._id }
         });
 
         const matches = [];
 
-        // 2. Evaluate each potential partner using rules engine
+        // 2. Evaluate each potential partner using the analytical engine
         for (let partner of potentialPartners) {
-            let score = 0;
-            let reasoning = '';
+            const { score, distance } = calculateMatchScore(listing, partner, ownerFacility);
 
-            const categoryInfo = (listing.category || '').toLowerCase();
-            const typeInfo = (listing.wasteType || '').toLowerCase();
-
-            // Synergistic Rules Engine
-            if (categoryInfo.includes('organik') || typeInfo.includes('organik')) {
-                if (partner.type === 'Greenhouse') {
-                    score = Math.floor(Math.random() * 5) + 90; // 90-95
-                    reasoning = 'Sera toprağı ve gübre yapımı için doğrudan organik entegrasyon potansiyeli.';
-                } else if (partner.type === 'Cooperative') {
-                    score = Math.floor(Math.random() * 10) + 80; // 80-90
-                    reasoning = 'Tarım kooperatifleri için yüksek nitelikli kompost fırsatı.';
-                } else {
-                    score = Math.floor(Math.random() * 30) + 40; // 40-70
-                    reasoning = 'Genel biyokütle veya biyogaz enerjisi kazanımı.';
-                }
-            } 
-            else if (typeInfo.includes('ısı') || typeInfo.includes('enerji') || categoryInfo === 'enerji') {
-                if (partner.type === 'Greenhouse') {
-                    score = Math.floor(Math.random() * 5) + 95; // 95-99
-                    reasoning = 'Seranın kışın ısıtılması için doğrudan atık ısı entegrasyonu (Mükemmel Sinerji).';
-                } else {
-                    score = Math.floor(Math.random() * 15) + 70; // 70-85
-                    reasoning = 'Endüstriyel kurutma ve ön ısıtma işlemleri için uygun termal kaynak.';
-                }
-            }
-            else {
-                // Metal, Plastik, Tekstil vb.
-                if (partner.type === 'Factory') {
-                    score = Math.floor(Math.random() * 10) + 85; // 85-95
-                    reasoning = `Malzeme tipi (${listing.category}) için ikincil endüstriyel üretim hattı uyumluluğu.`;
-                } else {
-                    score = Math.floor(Math.random() * 15) + 55; // 55-70
-                    reasoning = 'Genel geri dönüşüm veya alt yapı kullanım seçeneği.';
-                }
-            }
-
-            // Geri Dönüşüm Bonus Puanı
-            if (partner.sector === 'recycling' || partner.sector === 'Geri Dönüşüm') {
-                score += 15;
-                reasoning = 'Lisanslı geri dönüşüm tesisi ile doğrudan malzeme besleme sinerjisi.';
-            }
-
-            score = Math.min(score, 99); // Max 99
-
-            if (score >= 60) {
+            if (score >= 40) {
                 matches.push({
                     partner: {
                         _id: partner._id,
@@ -143,14 +98,16 @@ router.get('/:id/matches', async (req, res) => {
                         sector: partner.sector
                     },
                     matchScore: score,
-                    reasoning
+                    distance: distance,
+                    reasoning: `Bölgesel ve sektörel uyum analizi tamamlandı.`
                 });
             }
         }
 
-        // Sort by score
+        // Sort by score descending
         matches.sort((a, b) => b.matchScore - a.matchScore);
 
+        // Return top 3 matches
         res.status(200).json({ success: true, data: matches.slice(0, 3) });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

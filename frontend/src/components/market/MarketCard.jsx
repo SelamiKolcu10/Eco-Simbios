@@ -130,18 +130,7 @@ export default function MarketCard({ item, onClick, isMatched, isFavorited, onTo
                 </div>
 
                 <div className="mt-auto">
-                    {/* Match Bar */}
-                    {!isMatched && (
-                        <div className="mb-4">
-                            <div className="flex justify-between text-[10px] mb-1.5">
-                                <span className="text-slate-500 font-medium tracking-wide">Eşleşme</span>
-                                <span className={`font-bold ${scoreColor}`}>{item.matchScore}%</span>
-                            </div>
-                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                                <div className={`h-full rounded-full ${barColor}`} style={{ width: `${item.matchScore}%` }}></div>
-                            </div>
-                        </div>
-                    )}
+
 
                     {/* Action Button */}
                     <div className="flex flex-col gap-2">

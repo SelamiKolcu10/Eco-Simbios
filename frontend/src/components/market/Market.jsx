@@ -1,13 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
 import axios from 'axios';
-import { applySmartMatching } from '../../data/matchingEngine';
 import MarketCard from './MarketCard';
 import MarketModal from './MarketModal';
 import AddListingModal from './AddListingModal';
 import AIMatchModal from './AIMatchModal';
 import { useAuth } from '../../context/AuthContext';
 
-const API_URL = 'http://localhost:5000/api/listings';
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/listings';
 
 const getImageForMaterial = (material, category) => {
     const text = (material || '').toLowerCase();
@@ -59,7 +58,6 @@ const transformListing = (item) => ({
     location: item.createdBy?.region || 'Belirtilmemiş',
     category: item.category || 'Diğer',
     tag: item.status === 'active' ? 'Yeni İlan' : '',
-    matchScore: Math.floor(Math.random() * 40) + 50, // Simulated match score for demo
     aiMatch: false,
     buyer: 'Sistem Önerisi Aranıyor',
     buyerUse: 'Geri Dönüşüm',
@@ -97,9 +95,7 @@ export default function Market({ onMatch, matchedIds, hasProfile, onNavigate, pe
                 const res = await axios.get(API_URL);
                 if (res.data.success) {
                     const transformed = res.data.data.map(transformListing);
-                    // Generate scores once using the smart matcher
-                    const matched = applySmartMatching(transformed);
-                    setListings(matched);
+                    setListings(transformed);
                 }
             } catch (error) {
                 console.error("Failed to load listings", error);

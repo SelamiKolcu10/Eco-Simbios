@@ -74,7 +74,7 @@ export default function AddListingModal({ onClose, onMatchConfirmed }) {
                 energyValue: numAmount * 1.5, // Arbitrary calculation for energy
                 status: 'active'
             };
-            const res = await authAxios.post('http://localhost:5000/api/listings', payload);
+            const res = await authAxios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/listings`, payload);
             const dbListing = res.data.data;
 
             // 2. Generate match result UI logic

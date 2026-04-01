@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 
 import { TopNavbar }      from './components/layout/TopNavbar';
@@ -15,57 +16,31 @@ import MatchmakingEngine from './components/matchmaking/MatchmakingEngine';
 import Login    from './components/auth/Login';
 import Register from './components/auth/Register';
 
-export default function App() {
+function AppLayout() {
     const { isLoggedIn, loading, logout } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
 
     const [favorites, setFavorites] = useState(() => {
         const saved = localStorage.getItem('eco-simbios-favorites');
         return saved ? new Set(JSON.parse(saved)) : new Set();
     });
-    const [activeSection, setActiveSectionState] = useState(() => {
-        return window.location.hash.replace('#', '') || 'dashboard';
-    });
+
     const [kpiBonus, setKpiBonus]   = useState({ earnings: 0, carbon: 0 });
     const [matchedIds, setMatchedIds] = useState(new Set());
     const [hasProfile, setHasProfile] = useState(false);
     const [pendingMatch, setPendingMatch] = useState(null);
 
-    // 'login' | 'register'  — which auth screen to show when not logged in
-    const [authView, setAuthView] = useState('login');
-    const [registerData, setRegisterData] = useState(null);
-
-    const setActiveSection = (section, payload = null) => {
-        if (section === 'register' && payload) {
-            setRegisterData(payload);
-        } else if (section !== 'register') {
-            setRegisterData(null); // Clear data when navigating away
-        }
-
-        setActiveSectionState(section);
-        if (window.location.hash !== `#${section}`) {
-            window.history.pushState(null, '', `#${section}`);
-        }
-    };
+    // activeSection is derived from pathname for backwards compatibility in TopNavbar
+    const activeSection = location.pathname.substring(1) || 'dashboard';
 
     useEffect(() => {
         localStorage.setItem('eco-simbios-favorites', JSON.stringify([...favorites]));
     }, [favorites]);
 
-    useEffect(() => {
-        const handlePopState = () => {
-            const hash = window.location.hash.replace('#', '');
-            setActiveSectionState(hash || 'dashboard');
-        };
-        window.addEventListener('popstate', handlePopState);
-        if (!window.location.hash) {
-            window.history.replaceState(null, '', '#dashboard');
-        }
-        return () => window.removeEventListener('popstate', handlePopState);
-    }, []);
-
     const handleLogout = () => {
         logout();
-        setActiveSection('dashboard');
+        navigate('/');
         setKpiBonus({ earnings: 0, carbon: 0 });
         setMatchedIds(new Set());
     };
@@ -87,7 +62,12 @@ export default function App() {
         });
     };
 
-    // ── While restoring session from localStorage ─────────────────────────
+    // Helper for old onNavigate callbacks
+    const handleNavigate = (path) => {
+        if (path === 'dashboard') navigate('/');
+        else navigate(`/${path}`);
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50">
@@ -102,55 +82,45 @@ export default function App() {
         );
     }
 
-    // ── Auth gate: show Login or Register ─────────────────────────────────
-    if (activeSection === 'login') {
-        return (
-            <Login
-                onNavigate={setActiveSection}
-                onSwitchToRegister={() => setActiveSection('register')}
-            />
-        );
-    }
-
-    if (activeSection === 'register') {
-        return (
-            <Register
-                initialData={registerData}
-                onNavigate={setActiveSection}
-                onSwitchToLogin={() => setActiveSection('login')}
-            />
-        );
-    }
-
-    // ── Main authenticated app ─────────────────────────────────────────────
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-[#F8F9FA] font-sans text-foreground">
-            <TopNavbar
-                activeSection={activeSection}
-                setActiveSection={setActiveSection}
-                onLogout={handleLogout}
+            <TopNavbar 
+                activeSection={activeSection} 
+                setActiveSection={handleNavigate} 
+                onLogout={handleLogout} 
             />
             <DashboardContent activeSection={activeSection}>
-                <div className="space-y-6">
-                    {activeSection === 'dashboard'   && <Dashboard kpiBonus={kpiBonus} onNavigate={setActiveSection} />}
-                    {activeSection === 'discovery'   && <DiscoveryPage onNavigate={setActiveSection} />}
-                    {activeSection === 'map'         && <StrategicDashboard />}
-                    {activeSection === 'social'      && <SocialImpact />}
-                    {activeSection === 'market'      && (
+                <Routes>
+                    <Route path="/" element={<Dashboard kpiBonus={kpiBonus} onNavigate={handleNavigate} />} />
+                    <Route path="/discovery" element={<DiscoveryPage onNavigate={handleNavigate} />} />
+                    <Route path="/map" element={<StrategicDashboard />} />
+                    <Route path="/social" element={<SocialImpact />} />
+                    <Route path="/market" element={
                         <Market
                             onMatch={handleMatch}
                             matchedIds={matchedIds}
                             hasProfile={hasProfile}
-                            onNavigate={setActiveSection}
+                            onNavigate={handleNavigate}
                             pendingMatch={pendingMatch}
                             setPendingMatch={setPendingMatch}
                             favorites={favorites}
                             onToggleFavorite={toggleFavorite}
                         />
-                    )}
-                    {activeSection === 'matchmaking' && <MatchmakingEngine onRegister={() => setHasProfile(true)} onNavigate={setActiveSection} />}
-                </div>
+                    } />
+                    <Route path="/matchmaking" element={<MatchmakingEngine onRegister={() => setHasProfile(true)} onNavigate={handleNavigate} />} />
+                    <Route path="/login" element={<Login onNavigate={handleNavigate} onSwitchToRegister={() => navigate('/register')} />} />
+                    <Route path="/register" element={<Register initialData={null} onNavigate={handleNavigate} onSwitchToLogin={() => navigate('/login')} />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
             </DashboardContent>
         </div>
+    );
+}
+
+export default function App() {
+    return (
+        <BrowserRouter>
+            <AppLayout />
+        </BrowserRouter>
     );
 }
