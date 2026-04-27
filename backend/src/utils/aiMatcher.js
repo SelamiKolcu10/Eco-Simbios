@@ -15,50 +15,57 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 
-exports.calculateMatchScore = (listing, targetFacility, sourceFacility) => {
-    // 1. Distance Score (Mesafe Skoru)
+const distanceScore = (distance) => {
+    if (distance === -1) return 50;
+    if (distance <= 50) return 100;
+    if (distance >= 500) return 10;
+    return 100 - ((distance - 50) / 450) * 90;
+};
+
+const evaluateMatch = (listing, buyerFacility, requestedAmount) => {
+    // 1. Layer 1: Kategori/Mantık Eşleşmesi (Hard Filter)
+    const needed = buyerFacility.resourceNeeded || [];
+    if (!needed.includes(listing.category)) {
+        return { matchScore: 0, isMatch: false, reason: "Category mismatch" };
+    }
+
+    // 2. Layer 2: Lojistik ve Karbon Skoru (Spatial/Carbon Score - 60% Etki)
+    const sourceLoc = listing.createdBy?.location || {};
+    const buyerLoc = buyerFacility.location || {};
+
     let distance = haversineDistance(
-        sourceFacility.location?.lat, sourceFacility.location?.lng,
-        targetFacility.location?.lat, targetFacility.location?.lng
+        sourceLoc.lat, sourceLoc.lng,
+        buyerLoc.lat, buyerLoc.lng
     );
 
-    let distanceScore = 0;
-    if (distance === -1) {
-        // Fallback for missing coordinates
-        distanceScore = 30; 
-    } else if (distance <= 50) {
-        distanceScore = 100;
-    } else if (distance >= 500) {
-        distanceScore = 10;
-    } else {
-        // Drop gradually between 50km and 500km
-        distanceScore = 100 - ((distance - 50) / 450) * 90;
+    const dScore = distanceScore(distance);
+
+    // 3. Layer 3: Miktar Eşleşmesi (Volume Score - 40% Etki)
+    let vScore = 100;
+    if (requestedAmount && requestedAmount > 0) {
+        const ratio = (listing.amount || 0) / requestedAmount;
+        if (ratio >= 1) {
+            vScore = 100;
+        } else if (ratio >= 0.5) {
+            vScore = 80;
+        } else {
+            vScore = Math.floor(ratio * 100);
+        }
     }
 
-    // 2. Synergy Score (Uyum Skoru)
-    let synergyScore = 40; // baseline
-    const listCat = (listing.category || '').toLowerCase();
-    const targetType = (targetFacility.type || '').toLowerCase();
-    const targetSector = (targetFacility.sector || '').toLowerCase();
+    // Final Output: 60% Distance, 40% Volume
+    const matchScore = Math.floor((dScore * 0.6) + (vScore * 0.4));
 
-    if ((listCat === 'organik' || listCat === 'biyokütle') && 
-        (targetType === 'greenhouse' || targetType === 'cooperative')) {
-        synergyScore = 100;
-    } else if ((listCat === 'metal' || listCat === 'kimyasal') && targetType === 'factory') {
-        synergyScore = 100;
-    } else if (targetSector.includes('geri dönüşüm') || targetSector === 'recycling') {
-        synergyScore = 95;
-    } else if (listCat === 'plastik' && targetType === 'factory') {
-        synergyScore = 80;
-    } else if (listCat === 'ahşap' && targetType === 'factory') {
-        synergyScore = 70;
-    }
-
-    // 3. Final Match Score: 60% Synergy, 40% Distance
-    const finalScore = Math.round((synergyScore * 0.6) + (distanceScore * 0.4));
-    
     return {
-        score: finalScore,
-        distance: distance === -1 ? null : Math.round(distance)
+        matchScore,
+        isMatch: true,
+        distanceKm: distance === -1 ? null : Math.round(distance),
+        breakdown: {
+            distanceScore: Math.floor(dScore),
+            volumeScore: vScore
+        },
+        reason: "Match successful based on category, volume, and distance."
     };
 };
+
+module.exports = { evaluateMatch, haversineDistance };

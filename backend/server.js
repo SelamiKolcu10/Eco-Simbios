@@ -26,6 +26,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/facilities', facilityRoutes);
 app.use('/api/listings', listingRoutes);
+const socialRoutes = require('./src/routes/socialRoutes');
+app.use('/api/social/request', socialRoutes);
 
 
 // Base health-check route

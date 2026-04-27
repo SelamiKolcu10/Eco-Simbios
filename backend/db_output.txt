@@ -1,0 +1,39 @@
+MongoDB Connected
+
+--- Döküman Sayıları ---
+Tesisler (Facilities): 90
+İlanlar (Listings): 18
+Pazar Ürünleri (MarketItems): 0
+
+--- Örnek Veriler ---
+Tesis Örneği: {
+  location: { lat: 40.78, lng: 29.53 },
+  _id: new ObjectId('69c71565236b4d6d52faf74e'),
+  name: 'Kocaeli Otomotiv OSB',
+  sector: 'Otomotiv'
+}
+Tesis Sektörleri: [
+  { _id: 'Metal', count: 10 },
+  { _id: 'Otomotiv', count: 3 },
+  { _id: 'Kâğıt', count: 1 },
+  { _id: 'Plastik', count: 4 },
+  { _id: 'Tekstil', count: 5 },
+  { _id: 'Gıda', count: 7 },
+  { _id: 'Kimya', count: 5 },
+  { _id: 'Tarım', count: 16 },
+  { _id: 'Elektronik', count: 1 },
+  { _id: 'Lojistik', count: 1 },
+  { _id: 'Enerji', count: 1 },
+  { _id: 'İnşaat', count: 8 },
+  { _id: 'Kooperatif', count: 25 },
+  { _id: 'Ahşap', count: 3 }
+]
+İlan Örneği: { _id: new ObjectId('69c8282ae7d5f6d81955c832'), category: 'Metal' }
+İlan Kategorileri: [
+  { _id: 'Tekstil', count: 3 },
+  { _id: 'Kimyasal', count: 3 },
+  { _id: 'Metal', count: 5 },
+  { _id: 'Ahşap', count: 3 },
+  { _id: 'Tümü', count: 1 },
+  { _id: 'Plastik', count: 3 }
+]

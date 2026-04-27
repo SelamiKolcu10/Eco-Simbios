@@ -2,6 +2,37 @@ import React, { useState } from 'react';
 
 export default function SocialImpact() {
     const [activeTab, setActiveTab] = useState('club');
+    
+    const [formData, setFormData] = useState({});
+    const [statusIndicator, setStatusIndicator] = useState(null);
+
+    const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+
+    const handleSubmit = async () => {
+        try {
+            setStatusIndicator('loading');
+            const reqTypeMap = { student: 'Burs', women: 'Kooperatif', club: 'Kulüp', recycle: 'Lojistik', other: 'Diğer' };
+            const payload = { ...formData, requestType: reqTypeMap[activeTab] || 'Diğer' };
+
+            const res = await fetch('http://localhost:5000/api/social/request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                setStatusIndicator('success');
+                setFormData({});
+                setTimeout(() => setStatusIndicator(null), 3000);
+            } else {
+                setStatusIndicator('error');
+                setTimeout(() => setStatusIndicator(null), 3000);
+            }
+        } catch (err) {
+            setStatusIndicator('error');
+            setTimeout(() => setStatusIndicator(null), 3000);
+        }
+    };
 
     return (
         <div className="space-y-8 w-full max-w-7xl mx-auto pb-10">
@@ -179,13 +210,13 @@ export default function SocialImpact() {
                     {activeTab === 'club' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 animate-in fade-in zoom-in-95 duration-200">
                             {[
-                                { label: 'Şirket/Kurum Adı', type: 'text', icon: 'fa-building', placeholder: 'Sponsor veya Kurum Adınız' },
-                                { label: 'Ad Soyad', type: 'text', icon: 'fa-user', placeholder: 'Yetkili Adı' },
-                                { label: 'Kurumsal E-posta', type: 'email', icon: 'fa-envelope', placeholder: 'ornek@kurum.com' },
-                                { label: 'Telefon', type: 'tel', icon: 'fa-phone', placeholder: '+90 (555) 000 00 00' },
-                                { label: 'Üniversite Kulüp Adı', type: 'text', icon: 'fa-users', placeholder: 'Örn: İTÜ Çevre Kulübü' },
-                                { label: 'Talep Edilen Bütçe (₺)', type: 'number', icon: 'fa-turkish-lira-sign', placeholder: 'Miktar giriniz' },
-                                { label: 'Tahmini Etkinlik/Proje Tarihi', type: 'date', icon: 'fa-calendar', placeholder: '' },
+                                { label: 'Şirket/Kurum Adı', name: 'institution', type: 'text', icon: 'fa-building', placeholder: 'Sponsor veya Kurum Adınız' },
+                                { label: 'Ad Soyad', name: 'fullName', type: 'text', icon: 'fa-user', placeholder: 'Yetkili Adı' },
+                                { label: 'Kurumsal E-posta', name: 'email', type: 'email', icon: 'fa-envelope', placeholder: 'ornek@kurum.com' },
+                                { label: 'Telefon', name: 'phone', type: 'tel', icon: 'fa-phone', placeholder: '+90 (555) 000 00 00' },
+                                { label: 'Üniversite Kulüp Adı', name: 'university', type: 'text', icon: 'fa-users', placeholder: 'Örn: İTÜ Çevre Kulübü' },
+                                { label: 'Talep Edilen Bütçe (₺)', name: 'budget', type: 'number', icon: 'fa-turkish-lira-sign', placeholder: 'Miktar giriniz' },
+                                { label: 'Tahmini Etkinlik/Proje Tarihi', name: 'date', type: 'date', icon: 'fa-calendar', placeholder: '' },
                             ].map((field, idx) => (
                                 <div key={idx} className="space-y-1.5">
                                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">{field.label}</label>
@@ -194,6 +225,9 @@ export default function SocialImpact() {
                                             <i className={`fa-solid ${field.icon} text-slate-400`}></i>
                                         </div>
                                         <input 
+                                            name={field.name}
+                                            value={formData[field.name] || ''}
+                                            onChange={handleChange}
                                             type={field.type} 
                                             placeholder={field.placeholder} 
                                             className="w-full bg-white border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-all shadow-[inset_0_1px_3px_rgba(0,0,0,0.02)]"
@@ -204,6 +238,9 @@ export default function SocialImpact() {
                             <div className="space-y-1.5 md:col-span-2">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Proje/Etkinlik Özeti (Max 300 Kelime)</label>
                                 <textarea 
+                                    name="message"
+                                    value={formData.message || ''}
+                                    onChange={handleChange}
                                     rows="3"
                                     placeholder="Lütfen kulüp projenizin veya etkinliğinizin iklim/çevre hedeflerini özetleyin..." 
                                     className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-all shadow-[inset_0_1px_3px_rgba(0,0,0,0.02)] resize-none"
@@ -216,10 +253,10 @@ export default function SocialImpact() {
                     {activeTab === 'student' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 animate-in fade-in zoom-in-95 duration-200">
                             {[
-                                { label: 'Ad Soyad', type: 'text', icon: 'fa-user', placeholder: 'Örn: Ayşe Yılmaz' },
-                                { label: 'Üniversite / Bölüm', type: 'text', icon: 'fa-building-columns', placeholder: 'Örn: Boğaziçi Üniversitesi / Çevre Müh.' },
-                                { label: 'Gmail / E-posta', type: 'email', icon: 'fa-envelope', placeholder: 'ornek@gmail.com' },
-                                { label: 'Telefon', type: 'tel', icon: 'fa-phone', placeholder: '+90 (555) 000 00 00' },
+                                { label: 'Ad Soyad', name: 'fullName', type: 'text', icon: 'fa-user', placeholder: 'Örn: Ayşe Yılmaz' },
+                                { label: 'Üniversite / Bölüm', name: 'university', type: 'text', icon: 'fa-building-columns', placeholder: 'Örn: Boğaziçi Üniversitesi / Çevre Müh.' },
+                                { label: 'Gmail / E-posta', name: 'email', type: 'email', icon: 'fa-envelope', placeholder: 'ornek@gmail.com' },
+                                { label: 'Telefon', name: 'phone', type: 'tel', icon: 'fa-phone', placeholder: '+90 (555) 000 00 00' },
                             ].map((field, idx) => (
                                 <div key={idx} className="space-y-1.5">
                                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">{field.label}</label>
@@ -228,6 +265,9 @@ export default function SocialImpact() {
                                             <i className={`fa-solid ${field.icon} text-slate-400`}></i>
                                         </div>
                                         <input 
+                                            name={field.name}
+                                            value={formData[field.name] || ''}
+                                            onChange={handleChange}
                                             type={field.type} 
                                             placeholder={field.placeholder} 
                                             className="w-full bg-white border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-all shadow-[inset_0_1px_3px_rgba(0,0,0,0.02)]"
@@ -254,8 +294,8 @@ export default function SocialImpact() {
                     {activeTab === 'women' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 animate-in fade-in zoom-in-95 duration-200">
                             {[
-                                { label: 'Ad Soyad / Kooperatif Adı', type: 'text', icon: 'fa-user', placeholder: 'Talep Eden Kişi/Kurum' },
-                                { label: 'İletişim & Gmail', type: 'text', icon: 'fa-envelope', placeholder: 'Tel / E-posta' },
+                                { label: 'Ad Soyad / Kooperatif Adı', name: 'fullName', type: 'text', icon: 'fa-user', placeholder: 'Talep Eden Kişi/Kurum' },
+                                { label: 'İletişim & Gmail', name: 'email', type: 'text', icon: 'fa-envelope', placeholder: 'Tel / E-posta' },
                             ].map((field, idx) => (
                                 <div key={idx} className="space-y-1.5">
                                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">{field.label}</label>
@@ -264,6 +304,9 @@ export default function SocialImpact() {
                                             <i className={`fa-solid ${field.icon} text-slate-400`}></i>
                                         </div>
                                         <input 
+                                            name={field.name}
+                                            value={formData[field.name] || ''}
+                                            onChange={handleChange}
                                             type={field.type} 
                                             placeholder={field.placeholder} 
                                             className="w-full bg-white border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-all shadow-[inset_0_1px_3px_rgba(0,0,0,0.02)]"
@@ -277,8 +320,12 @@ export default function SocialImpact() {
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                         <i className="fa-solid fa-location-dot text-slate-400"></i>
                                     </div>
-                                    <select className="w-full bg-white border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-700 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-all shadow-[inset_0_1px_3px_rgba(0,0,0,0.02)] appearance-none cursor-pointer">
-                                        <option value="" disabled selected>Bölge/Sera Seçiniz</option>
+                                    <select 
+                                        name="location"
+                                        value={formData.location || ''}
+                                        onChange={handleChange}
+                                        className="w-full bg-white border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-700 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-all shadow-[inset_0_1px_3px_rgba(0,0,0,0.02)] appearance-none cursor-pointer">
+                                        <option value="" disabled>Bölge/Sera Seçiniz</option>
                                         <option value="marmara">Marmara - Bandırma Serası</option>
                                         <option value="ege">Ege - İzmir Kadın Kooperatifi</option>
                                         <option value="akdeniz">Akdeniz - Antalya Serası</option>
@@ -295,11 +342,15 @@ export default function SocialImpact() {
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                         <i className="fa-solid fa-seedling text-slate-400"></i>
                                     </div>
-                                    <select className="w-full bg-white border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-700 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-all shadow-[inset_0_1px_3px_rgba(0,0,0,0.02)] appearance-none cursor-pointer">
-                                        <option value="" disabled selected>Pozisyon Seçiniz</option>
-                                        <option value="1">Organik Tarım Üreticisi</option>
-                                        <option value="2">Geri Dönüştürülmüş Gübre Uzmanı</option>
-                                        <option value="3">Paketleme & Lojistik</option>
+                                    <select 
+                                        name="specialization"
+                                        value={formData.specialization || ''}
+                                        onChange={handleChange}
+                                        className="w-full bg-white border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-700 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-all shadow-[inset_0_1px_3px_rgba(0,0,0,0.02)] appearance-none cursor-pointer">
+                                        <option value="" disabled>Pozisyon Seçiniz</option>
+                                        <option value="Organik Tarım Üreticisi">Organik Tarım Üreticisi</option>
+                                        <option value="Geri Dönüştürülmüş Gübre Uzmanı">Geri Dönüştürülmüş Gübre Uzmanı</option>
+                                        <option value="Paketleme & Lojistik">Paketleme & Lojistik</option>
                                     </select>
                                     <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                                 </div>
@@ -311,9 +362,9 @@ export default function SocialImpact() {
                     {activeTab === 'recycle' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 animate-in fade-in zoom-in-95 duration-200">
                             {[
-                                { label: 'Tesis Bilgileri', type: 'text', icon: 'fa-industry', placeholder: 'Kayıtlı Kurum/Tesis Adı' },
-                                { label: 'İletişim / Gmail', type: 'text', icon: 'fa-envelope', placeholder: 'Tel / E-posta' },
-                                { label: 'Miktar (Ton)', type: 'number', icon: 'fa-scale-balanced', placeholder: 'Beklenen Toplam Miktar' },
+                                { label: 'Tesis Bilgileri', name: 'institution', type: 'text', icon: 'fa-industry', placeholder: 'Kayıtlı Kurum/Tesis Adı' },
+                                { label: 'İletişim / Gmail', name: 'email', type: 'text', icon: 'fa-envelope', placeholder: 'Tel / E-posta' },
+                                { label: 'Miktar (Ton)', name: 'amount', type: 'number', icon: 'fa-scale-balanced', placeholder: 'Beklenen Toplam Miktar' },
                             ].map((field, idx) => (
                                 <div key={idx} className="space-y-1.5">
                                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">{field.label}</label>
@@ -322,6 +373,9 @@ export default function SocialImpact() {
                                             <i className={`fa-solid ${field.icon} text-slate-400`}></i>
                                         </div>
                                         <input 
+                                            name={field.name}
+                                            value={formData[field.name] || ''}
+                                            onChange={handleChange}
                                             type={field.type} 
                                             placeholder={field.placeholder} 
                                             className="w-full bg-white border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-all shadow-[inset_0_1px_3px_rgba(0,0,0,0.02)]"
@@ -335,11 +389,15 @@ export default function SocialImpact() {
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                         <i className="fa-solid fa-recycle text-slate-400"></i>
                                     </div>
-                                    <select className="w-full bg-white border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-700 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-all shadow-[inset_0_1px_3px_rgba(0,0,0,0.02)] appearance-none cursor-pointer">
-                                        <option value="" disabled selected>Atık Türü Seçiniz</option>
-                                        <option value="1">Organik / Tarımsal Atık</option>
-                                        <option value="2">Endüstriyel Isı/Su</option>
-                                        <option value="3">Geri Dönüştürülebilir Plastik/Metal</option>
+                                    <select 
+                                        name="specialization"
+                                        value={formData.specialization || ''}
+                                        onChange={handleChange}
+                                        className="w-full bg-white border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-700 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-all shadow-[inset_0_1px_3px_rgba(0,0,0,0.02)] appearance-none cursor-pointer">
+                                        <option value="" disabled>Atık Türü Seçiniz</option>
+                                        <option value="Organik / Tarımsal Atık">Organik / Tarımsal Atık</option>
+                                        <option value="Endüstriyel Isı/Su">Endüstriyel Isı/Su</option>
+                                        <option value="Geri Dönüştürülebilir Plastik/Metal">Geri Dönüştürülebilir Plastik/Metal</option>
                                     </select>
                                     <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                                 </div>
@@ -359,10 +417,16 @@ export default function SocialImpact() {
                     )}
 
                     {/* Submit Button */}
-                    <div className="mt-8 flex justify-center">
-                        <button className="w-full md:w-2/3 lg:w-1/2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm py-4 px-8 rounded-xl shadow-[0_4px_15px_rgba(30,41,59,0.3)] hover:shadow-[0_6px_20px_rgba(30,41,59,0.4)] transition-all flex items-center justify-center gap-3">
-                            <span>Talebi İncelemeye Gönder</span>
-                            <i className="fa-solid fa-paper-plane text-[11px]"></i>
+                    <div className="mt-8 flex justify-center flex-col items-center gap-3">
+                        {statusIndicator === 'success' && <p className="text-sm text-emerald-600 font-bold">Talebiniz başarıyla alındı!</p>}
+                        {statusIndicator === 'error' && <p className="text-sm text-rose-500 font-bold">Bir hata oluştu, lütfen zorunlu alanları doldurun.</p>}
+                        
+                        <button 
+                            onClick={handleSubmit}
+                            disabled={statusIndicator === 'loading'}
+                            className="w-full md:w-2/3 lg:w-1/2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white font-bold text-sm py-4 px-8 rounded-xl shadow-[0_4px_15px_rgba(30,41,59,0.3)] hover:shadow-[0_6px_20px_rgba(30,41,59,0.4)] transition-all flex items-center justify-center gap-3">
+                            <span>{statusIndicator === 'loading' ? 'Gönderiliyor...' : 'Talebi İncelemeye Gönder'}</span>
+                            <i className={`fa-solid ${statusIndicator === 'loading' ? 'fa-spinner fa-spin' : 'fa-paper-plane'} text-[11px]`}></i>
                         </button>
                     </div>
 
