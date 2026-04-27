@@ -6,6 +6,9 @@ const marketRoutes = require('./src/routes/marketRoutes');
 const facilityRoutes = require('./src/routes/facilityRoutes');
 const authRoutes = require('./src/routes/authRoutes');
 const listingRoutes = require('./src/routes/listingRoutes');
+const notificationRoutes = require('./src/routes/notificationRoutes');
+const statsRoutes = require('./src/routes/statsRoutes');
+const matchRoutes = require('./src/routes/matchRoutes');
 const errorHandler = require('./src/middlewares/errorHandler');
 
 // Load environment variables
@@ -26,6 +29,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/facilities', facilityRoutes);
 app.use('/api/listings', listingRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/stats', statsRoutes);
+app.use('/api/matches', matchRoutes);
 const socialRoutes = require('./src/routes/socialRoutes');
 app.use('/api/social/request', socialRoutes);
 

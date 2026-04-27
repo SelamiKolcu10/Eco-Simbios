@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 export default function SocialImpact() {
+    const { isLoggedIn, token } = useAuth();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('club');
     
     const [formData, setFormData] = useState({});
@@ -9,6 +14,12 @@ export default function SocialImpact() {
     const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
     const handleSubmit = async () => {
+        if (!isLoggedIn) {
+            toast.error('Başvuru yapmak için lütfen giriş yapın veya kayıt olun.');
+            navigate('/login');
+            return;
+        }
+
         try {
             setStatusIndicator('loading');
             const reqTypeMap = { student: 'Burs', women: 'Kooperatif', club: 'Kulüp', recycle: 'Lojistik', other: 'Diğer' };
@@ -16,7 +27,10 @@ export default function SocialImpact() {
 
             const res = await fetch('http://localhost:5000/api/social/request', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
                 body: JSON.stringify(payload)
             });
 

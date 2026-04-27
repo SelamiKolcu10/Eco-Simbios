@@ -1,10 +1,12 @@
 import React from 'react';
-import { Leaf, LogOut, User } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Leaf, User, ChevronDown } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import NotificationDropdown from '../shared/NotificationDropdown';
 
 export function TopNavbar({ activeSection, setActiveSection, onLogout }) {
     const { isLoggedIn, facility } = useAuth();
+    const navigate = useNavigate();
 
     const navItems = [
         { id: 'dashboard', label: 'Endüstriyel Simbiyoz' },
@@ -52,16 +54,17 @@ export function TopNavbar({ activeSection, setActiveSection, onLogout }) {
                 <div className="flex items-center justify-end gap-3 ml-8 min-w-[200px]">
                     {isLoggedIn ? (
                         <>
-                            <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-800 rounded-lg text-sm font-semibold border border-emerald-100/50">
+                            {/* Notifications Dropdown */}
+                            <NotificationDropdown />
+                            
+                            {/* Profile badge — navigate to Admin Dashboard */}
+                            <button
+                                onClick={() => navigate('/admin')}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-800 rounded-lg text-sm font-semibold border border-emerald-100/50 hover:bg-emerald-100 transition-colors group"
+                            >
                                 <User className="h-4 w-4 text-emerald-600" />
                                 <span className="max-w-[120px] truncate">{facility?.name || 'Profilim'}</span>
-                            </div>
-                            <button
-                                onClick={onLogout}
-                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                title="Çıkış Yap"
-                            >
-                                <LogOut className="h-5 w-5" />
+                                <ChevronDown className="h-3.5 w-3.5 text-emerald-500 group-hover:rotate-180 transition-transform duration-200" />
                             </button>
                         </>
                     ) : (

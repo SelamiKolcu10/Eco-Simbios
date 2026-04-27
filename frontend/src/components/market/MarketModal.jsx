@@ -1,13 +1,26 @@
 import { useState, useCallback } from 'react';
+import axios from 'axios';
+import toast from 'react-hot-toast';
 import MatchSuccessPopup from '../shared/MatchSuccessPopup';
+import { useAuth } from '../../context/AuthContext';
+
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/listings';
 
 export default function MarketModal({ item, onClose, onMatchConfirmed, hasProfile, onNavigate, setPendingMatch }) {
+    const { token, isLoggedIn } = useAuth();
     const [loading, setLoading] = useState(false);
     const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
     const scoreColor = item.matchScore >= 85 ? '#34d399' : item.matchScore >= 70 ? '#fbbf24' : '#f87171';
 
-    const handleStartMatch = () => {
+    const handleStartMatch = async () => {
+        if (!isLoggedIn) {
+            toast.error('Eşleşme işlemi için lütfen önce giriş yapın veya kayıt olun.');
+            if (setPendingMatch) setPendingMatch(item);
+            if (onNavigate) onNavigate('login');
+            return;
+        }
+        
         if (!hasProfile) {
             if (setPendingMatch) setPendingMatch(item);
             if (onNavigate) onNavigate('matchmaking');
@@ -15,11 +28,26 @@ export default function MarketModal({ item, onClose, onMatchConfirmed, hasProfil
         }
 
         setLoading(true);
-        setTimeout(() => {
+        try {
+            // ── Persist match request to DB if the listing has a real ID ────────
+            if (item.id) {
+                try {
+                    await axios.post(
+                        `${API_URL}/${item.id}/match`,
+                        {},
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                } catch (patchErr) {
+                    // 400 means they tried to match with their own listing, etc.
+                    console.warn('Could not initiate match:', patchErr.response?.data?.message);
+                }
+            }
+        } finally {
             setLoading(false);
             setShowSuccessPopup(true);
             if (setPendingMatch) setPendingMatch(null);
-        }, 2000);
+            toast.success('Eşleşme başarıyla tamamlandı! ✅');
+        }
     };
 
     const handleSuccessPopupClose = () => {

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Truck, Flame, Recycle, X, Search, Handshake, ScrollText, Rocket, ChevronDown } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { findBestMatch } from '../../data/matchingEngine';
 
 const FACILITIES = [
@@ -77,6 +78,19 @@ export default function AddListingModal({ onClose, onMatchConfirmed }) {
             const res = await authAxios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/listings`, payload);
             const dbListing = res.data.data;
 
+            // Mark the newly created listing as matched immediately
+            if (dbListing?._id) {
+                try {
+                    await authAxios.patch(
+                        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/listings/${dbListing._id}/status`,
+                        { status: 'matched' }
+                    );
+                } catch (patchErr) {
+                    // Non-fatal — listing was created, status update is best-effort
+                    console.warn('Status patch failed:', patchErr.response?.data?.message);
+                }
+            }
+
             // 2. Generate match result UI logic
             let result = {
                 partner: "",
@@ -128,9 +142,10 @@ export default function AddListingModal({ onClose, onMatchConfirmed }) {
             };
 
             setMatchResult(result);
+            toast.success('İlan başarıyla oluşturuldu ve eşleşme bulundu!');
         } catch (error) {
             console.error("Listing creation failed:", error);
-            alert("İlan eklenirken bir hata oluştu.");
+            toast.error(error.response?.data?.message || "İlan eklenirken bir hata oluştu.");
         } finally {
             setLoading(false);
         }

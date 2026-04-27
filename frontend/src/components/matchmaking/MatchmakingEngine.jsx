@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Leaf, Recycle, Box, FlaskConical, Layers } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const categories = [
     {
@@ -40,6 +42,7 @@ const categories = [
 ];
 
 export default function MatchmakingEngine({ onRegister, onNavigate }) {
+    const { isLoggedIn } = useAuth();
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [selectedSubcategory, setSelectedSubcategory] = useState(null);
 
@@ -66,7 +69,14 @@ export default function MatchmakingEngine({ onRegister, onNavigate }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        alert('Tesis bilgilerinizi aldık. Lütfen güvenlik amacıyla parolanızı belirleyerek kaydı tamamlayın.');
+
+        if (isLoggedIn) {
+            toast.success('Yapay zeka eşleşme talebiniz alındı. Pazar yerinde sonuçlar listelenecektir.');
+            if (onNavigate) onNavigate('market');
+            return;
+        }
+
+        toast.success('Kategori seçimi başarılı. Devam etmek için lütfen kaydınızı tamamlayın.');
         
         // Pass the pre-filled data to the registration component
         if (onNavigate) {

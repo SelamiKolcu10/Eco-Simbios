@@ -1,4 +1,5 @@
 const SocialRequest = require('../models/SocialRequest');
+const Notification = require('../models/Notification');
 
 exports.createSocialRequest = async (req, res, next) => {
     try {
@@ -30,6 +31,14 @@ exports.createSocialRequest = async (req, res, next) => {
             specialization,
             amount,
             message
+        });
+
+        // Create a notification for the facility that requested it
+        await Notification.create({
+            recipient: req.facilityId,
+            type: 'social_update',
+            message: `Sosyal Etki başvurunuz başarıyla alındı ve inceleme sürecine girdi. (${requestType})`,
+            relatedId: newRequest._id
         });
 
         res.status(201).json({

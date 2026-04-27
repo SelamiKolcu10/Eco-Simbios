@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 // ─── Reusable field component ────────────────────────────────────────────────
@@ -24,6 +25,10 @@ function Field({ label, id, type = 'text', value, onChange, placeholder, require
 // ─── Login Page ──────────────────────────────────────────────────────────────
 export default function Login({ onNavigate, onSwitchToRegister }) {
     const { login } = useAuth();
+    const location  = useLocation();
+
+    // Message passed from AxiosInterceptorSetup when a 401 triggers auto-logout
+    const sessionMsg = location.state?.sessionExpired ? location.state.message : null;
 
     const [form, setForm]       = useState({ email: '', password: '' });
     const [error, setError]     = useState('');
@@ -81,6 +86,16 @@ export default function Login({ onNavigate, onSwitchToRegister }) {
                             placeholder="••••••••"
                             required
                         />
+
+                        {/* Session expired banner */}
+                        {sessionMsg && (
+                            <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+                                <svg className="w-4 h-4 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                                </svg>
+                                {sessionMsg}
+                            </div>
+                        )}
 
                         {/* Error message */}
                         {error && (

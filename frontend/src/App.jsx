@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import PrivateRoute from './components/shared/PrivateRoute';
+import AxiosInterceptorSetup from './components/shared/AxiosInterceptorSetup';
+import AdminDashboard from './pages/AdminDashboard';
 
+import { Toaster } from 'react-hot-toast';
 import { TopNavbar }      from './components/layout/TopNavbar';
 import { DashboardContent } from './components/layout/DashboardContent';
 
@@ -30,6 +34,7 @@ function AppLayout() {
     const [matchedIds, setMatchedIds] = useState(new Set());
     const [hasProfile, setHasProfile] = useState(false);
     const [pendingMatch, setPendingMatch] = useState(null);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     // activeSection is derived from pathname for backwards compatibility in TopNavbar
     const activeSection = location.pathname.substring(1) || 'dashboard';
@@ -84,10 +89,39 @@ function AppLayout() {
 
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-[#F8F9FA] font-sans text-foreground">
-            <TopNavbar 
-                activeSection={activeSection} 
-                setActiveSection={handleNavigate} 
-                onLogout={handleLogout} 
+            {/* Global 401 interceptor — auto-logout on expired/invalid JWT */}
+            <AxiosInterceptorSetup />
+            {/* Toast notification system */}
+            <Toaster
+                position="top-right"
+                toastOptions={{
+                    duration: 3500,
+                    style: {
+                        fontFamily: 'inherit',
+                        fontSize: '13px',
+                        borderRadius: '10px',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.10)',
+                        padding: '12px 16px',
+                    },
+                    success: {
+                        iconTheme: { primary: '#059669', secondary: '#fff' },
+                        style: { background: '#f0fdf4', color: '#14532d', border: '1px solid #bbf7d0' },
+                    },
+                    error: {
+                        iconTheme: { primary: '#dc2626', secondary: '#fff' },
+                        style: { background: '#fef2f2', color: '#7f1d1d', border: '1px solid #fecaca' },
+                        duration: 5000,
+                    },
+                    loading: {
+                        style: { background: '#f8fafc', color: '#1e293b', border: '1px solid #e2e8f0' },
+                    },
+                }}
+            />
+            {/* Profile slide-over panel removed - replaced by full page /admin */}
+            <TopNavbar
+                activeSection={activeSection}
+                setActiveSection={handleNavigate}
+                onLogout={handleLogout}
             />
             <DashboardContent activeSection={activeSection}>
                 <Routes>
@@ -107,9 +141,12 @@ function AppLayout() {
                             onToggleFavorite={toggleFavorite}
                         />
                     } />
-                    <Route path="/matchmaking" element={<MatchmakingEngine onRegister={() => setHasProfile(true)} onNavigate={handleNavigate} />} />
+                    <Route path="/matchmaking" element={
+                        <MatchmakingEngine onRegister={() => setHasProfile(true)} onNavigate={handleNavigate} />
+                    } />
                     <Route path="/login" element={<Login onNavigate={handleNavigate} onSwitchToRegister={() => navigate('/register')} />} />
                     <Route path="/register" element={<Register initialData={null} onNavigate={handleNavigate} onSwitchToLogin={() => navigate('/login')} />} />
+                    <Route path="/admin" element={<PrivateRoute><AdminDashboard /></PrivateRoute>} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </DashboardContent>
