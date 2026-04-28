@@ -1,6 +1,39 @@
 const SocialRequest = require('../models/SocialRequest');
 const Notification = require('../models/Notification');
 
+exports.getSocialRequests = async (req, res, next) => {
+    try {
+        const requests = await SocialRequest.find().sort({ createdAt: -1 });
+        res.status(200).json({ success: true, count: requests.length, data: requests });
+    } catch (error) {
+        console.error('Error fetching social requests:', error);
+        res.status(500).json({ success: false, error: 'Server Error' });
+    }
+};
+
+exports.updateSocialRequestStatus = async (req, res, next) => {
+    try {
+        const { status } = req.body;
+        const reqId = req.params.id;
+        
+        const request = await SocialRequest.findByIdAndUpdate(
+            reqId,
+            { status },
+            { new: true, runValidators: true }
+        );
+        
+        if (!request) {
+            return res.status(404).json({ success: false, error: 'Request not found' });
+        }
+        
+        // MVP: Just returning success, no actual email sent
+        res.status(200).json({ success: true, data: request });
+    } catch (error) {
+        console.error('Error updating social request status:', error);
+        res.status(500).json({ success: false, error: 'Server Error' });
+    }
+};
+
 exports.createSocialRequest = async (req, res, next) => {
     try {
         const {

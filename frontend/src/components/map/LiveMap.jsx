@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { antPath } from 'leaflet-ant-path';
 import { cities } from '../../data/cities';
 
 const fIcon = () => L.divIcon({ className: '', html: '<div style="width:24px;height:24px;border-radius:50%;background:rgba(239,68,68,.9);border:2px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 10px rgba(239,68,68,.5)"><i class="fa-solid fa-industry" style="color:#fff;font-size:9px"></i></div>', iconSize: [24, 24], iconAnchor: [12, 12] });
@@ -48,7 +49,15 @@ export default function LiveMap() {
                 if (ok && best) {
                     totalLinks++; totalCO2 += co;
                     const ml = (f.lat + best.lat) / 2, mg = (f.lng + best.lng) / 2;
-                    L.polyline([[f.lat, f.lng], [best.lat, best.lng]], { color: '#facc15', weight: 2, opacity: .75 }).addTo(map);
+                    antPath([[f.lat, f.lng], [best.lat, best.lng]], { 
+                        color: 'rgba(250,204,21,0.1)', 
+                        pulseColor: '#facc15', 
+                        delay: 600 + Math.random() * 600, 
+                        weight: 2.5, 
+                        dashArray: [10, 20],
+                        hardwareAccelerated: true,
+                        opacity: 0.8
+                    }).addTo(map);
                     L.marker([ml, mg], { icon: L.divIcon({ className: '', html: `<div style="background:rgba(250,204,21,.85);color:#080d19;font-size:7px;font-weight:700;padding:1px 4px;border-radius:5px">${dk}km</div>`, iconSize: [36, 12], iconAnchor: [18, 6] }), interactive: false }).addTo(map);
                 }
             });

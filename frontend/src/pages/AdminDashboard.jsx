@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 const API_AUTH = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/auth';
 const API_STATS = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/stats';
 const API_MATCHES = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/matches';
+const API_SOCIAL = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/social/request';
 
 // ─── Small reusable field ─────────────────────────────────────────────────────
 function Field({ label, id, type = 'text', value, onChange, placeholder, icon: Icon, disabled }) {
@@ -98,6 +99,10 @@ export default function AdminDashboard() {
     const [matchHistory, setMatchHistory] = useState({ initiated: [], received: [] });
     const [historyLoading, setHistoryLoading] = useState(false);
 
+    // ── Social Requests state ──────────────────────────────────────────────────
+    const [socialRequests, setSocialRequests] = useState([]);
+    const [requestsLoading, setRequestsLoading] = useState(false);
+
     // Populate profile form
     useEffect(() => {
         if (facility) {
@@ -149,6 +154,38 @@ export default function AdminDashboard() {
         fetchHistory();
     }, [token, activeTab]);
 
+    // Fetch Social Requests
+    useEffect(() => {
+        const fetchRequests = async () => {
+            if (!token || activeTab !== 'requests') return;
+            try {
+                setRequestsLoading(true);
+                const res = await axios.get(API_SOCIAL, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (res.data.success) setSocialRequests(res.data.data);
+            } catch (error) {
+                console.error('Failed to fetch social requests:', error);
+            } finally {
+                setRequestsLoading(false);
+            }
+        };
+        fetchRequests();
+    }, [token, activeTab]);
+
+    const handleStatusUpdate = async (id, status) => {
+        const toastId = toast.loading('Durum güncelleniyor...');
+        try {
+            await axios.put(`${API_SOCIAL}/${id}/status`, { status }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            toast.success('Başvuru durumu güncellendi.', { id: toastId });
+            setSocialRequests(prev => prev.map(r => r._id === id ? { ...r, status } : r));
+        } catch (err) {
+            toast.error('Güncelleme başarısız oldu.', { id: toastId });
+        }
+    };
+
     const handleProfileSave = async (e) => {
         e.preventDefault();
         setProfileLoading(true);
@@ -191,6 +228,7 @@ export default function AdminDashboard() {
     const navItems = [
         { id: 'pano', label: 'Genel Bakış', icon: Activity },
         { id: 'history', label: 'Eşleşme Geçmişi', icon: History },
+        { id: 'requests', label: 'Sosyal Etki Başvuruları', icon: User },
         { id: 'profile', label: 'Tesis Bilgileri', icon: Building2 },
         { id: 'security', label: 'Şifre ve Güvenlik', icon: Lock },
     ];
@@ -375,6 +413,68 @@ export default function AdminDashboard() {
                                         </div>
                                     )}
                                 </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ── Sosyal Etki Başvuruları ──────────────────────────────────────── */}
+                {activeTab === 'requests' && (
+                    <div className="animate-in slide-in-from-bottom-4 duration-500">
+                        <div className="mb-10">
+                            <h3 className="text-2xl font-extrabold text-slate-800 font-serif">Sosyal Etki Başvuruları</h3>
+                            <p className="text-slate-500 text-sm mt-1">Sisteme gelen tüm sosyal destek ve hibe başvurularını yönetin.</p>
+                        </div>
+
+                        {requestsLoading ? (
+                            <div className="flex justify-center py-20"><Loader2 className="animate-spin w-10 h-10 text-emerald-500" /></div>
+                        ) : (
+                            <div className="space-y-6">
+                                {socialRequests.length === 0 ? (
+                                    <p className="text-sm text-slate-400 italic bg-slate-50 p-4 rounded-xl border border-dashed">Henüz bir başvuru bulunmamaktadır.</p>
+                                ) : (
+                                    socialRequests.map(req => (
+                                        <div key={req._id} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                                                <div>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full">{req.requestType}</span>
+                                                        <h4 className="text-lg font-bold text-slate-800">{req.fullName}</h4>
+                                                    </div>
+                                                    <p className="text-sm text-slate-500">{req.institution || req.university} • {req.email}</p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <select 
+                                                        value={req.status} 
+                                                        onChange={(e) => handleStatusUpdate(req._id, e.target.value)}
+                                                        className={`text-xs font-bold rounded-lg px-3 py-1.5 border outline-none cursor-pointer
+                                                            ${req.status === 'Pending' ? 'bg-amber-50 text-amber-700 border-amber-200' : ''}
+                                                            ${req.status === 'Reviewed' ? 'bg-blue-50 text-blue-700 border-blue-200' : ''}
+                                                            ${req.status === 'Approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : ''}
+                                                            ${req.status === 'Rejected' ? 'bg-red-50 text-red-700 border-red-200' : ''}
+                                                        `}
+                                                    >
+                                                        <option value="Pending">Bekliyor (Pending)</option>
+                                                        <option value="Reviewed">İncelendi (Reviewed)</option>
+                                                        <option value="Approved">Onaylandı (Approved)</option>
+                                                        <option value="Rejected">Reddedildi (Rejected)</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="bg-slate-50 rounded-xl p-4 text-sm text-slate-700 border border-slate-100 mb-4">
+                                                <p className="mb-2"><span className="font-semibold text-slate-500">Bütçe / Miktar:</span> {req.budget || req.amount ? `${req.budget || req.amount} ₺` : 'Belirtilmemiş'}</p>
+                                                <p><span className="font-semibold text-slate-500">Mesaj:</span> {req.message || 'Mesaj bırakılmamış.'}</p>
+                                            </div>
+                                            
+                                            <div className="flex justify-end">
+                                                <button onClick={() => toast.success('E-posta bildirimi gönderildi! (Mock)')} className="text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-lg transition-colors">
+                                                    Başvuru Sahibine E-posta Gönder
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         )}
                     </div>
