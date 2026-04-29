@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import MarketCard from './MarketCard';
+import MarketSkeleton from './MarketSkeleton';
 import MarketModal from './MarketModal';
 import AddListingModal from './AddListingModal';
 import AIMatchModal from './AIMatchModal';
@@ -278,9 +279,8 @@ export default function Market({ onMatch, matchedIds, hasProfile, onNavigate, pe
                     {/* ── My Listings Tab ─────────────────────────────────── */}
                     {isMyListingsTab ? (
                         myListingsLoading ? (
-                            <div className="w-full text-center py-20 text-slate-400 font-serif">
-                                <i className="fa-solid fa-circle-notch fa-spin text-3xl mb-3 block text-emerald-400"></i>
-                                Yükleniyor...
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {[1, 2, 3].map(i => <MarketSkeleton key={i} />)}
                             </div>
                         ) : myListings.length === 0 ? (
                             <div className="w-full text-center py-20 bg-white rounded-2xl border border-slate-100 shadow-sm text-slate-500 font-serif">

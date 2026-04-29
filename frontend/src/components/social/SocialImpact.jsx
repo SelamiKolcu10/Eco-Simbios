@@ -25,7 +25,8 @@ export default function SocialImpact() {
             const reqTypeMap = { student: 'Burs', women: 'Kooperatif', club: 'Kulüp', recycle: 'Lojistik', other: 'Diğer' };
             const payload = { ...formData, requestType: reqTypeMap[activeTab] || 'Diğer' };
 
-            const res = await fetch('http://localhost:5000/api/social/request', {
+            const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${API_BASE}/api/social/request`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
