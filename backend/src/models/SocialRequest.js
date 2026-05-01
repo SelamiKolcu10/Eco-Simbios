@@ -9,7 +9,7 @@ const SocialRequestSchema = new mongoose.Schema(
         phone: { type: String },
         requestType: { 
             type: String, 
-            enum: ['Burs', 'Kooperatif', 'Eğitim', 'Kulüp', 'Lojistik', 'Diğer'], 
+            enum: ['Burs', 'Kooperatif', 'Eğitim', 'Kulüp', 'Lojistik', 'Diğer', 'Demo'], 
             required: [true, 'Başvuru türü zorunludur'] 
         },
         budget: { type: Number },

@@ -47,11 +47,11 @@ const signToken = (facilityId) => {
     );
 };
 
-// ─── Helper: build safe facility payload (no password) ──────────────────────
 const facilityPayload = (facility) => ({
     _id:           facility._id,
     name:          facility.name,
     email:         facility.email,
+    role:          facility.role,
     type:          facility.type,
     region:        facility.region,
     sector:        facility.sector,

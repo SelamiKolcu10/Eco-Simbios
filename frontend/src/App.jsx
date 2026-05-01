@@ -43,6 +43,12 @@ function AppLayout() {
         localStorage.setItem('eco-simbios-favorites', JSON.stringify([...favorites]));
     }, [favorites]);
 
+    useEffect(() => {
+        if (isLoggedIn) {
+            setHasProfile(true);
+        }
+    }, [isLoggedIn]);
+
     const handleLogout = () => {
         logout();
         navigate('/');

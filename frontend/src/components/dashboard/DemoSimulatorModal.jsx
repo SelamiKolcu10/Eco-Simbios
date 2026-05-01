@@ -31,13 +31,30 @@ export default function DemoSimulatorModal({ onClose }) {
     });
 
     // Start Demo Simulation
-    const handleStartDemo = (e) => {
+    const handleStartDemo = async (e) => {
         e.preventDefault();
 
         // Basic validation
         if (!formData.sector || !formData.waste || !formData.companyName || !formData.fullName || !formData.email) {
             alert('Lütfen analiz için tüm alanları doldurun.');
             return;
+        }
+
+        try {
+            await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/social/request/public`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fullName: formData.fullName,
+                    institution: formData.companyName,
+                    email: formData.email,
+                    requestType: 'Demo',
+                    amount: formData.amount,
+                    message: `Sektör: ${formData.sector}\nAtık Türü: ${formData.waste}\nTahmini Yıllık Miktar: ${formData.amount} Ton`
+                })
+            });
+        } catch (err) {
+            console.error('Demo kaydı oluşturulamadı:', err);
         }
 
         // Calculate fake metrics based on input amount and waste type

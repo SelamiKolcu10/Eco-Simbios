@@ -83,9 +83,9 @@ function HeroSection({ onNavigate, onShowVideo }) {
                 <div className="relative w-full aspect-auto md:aspect-video lg:aspect-[1.2] xl:max-h-[500px] flex justify-center items-center px-4 md:px-0">
                     <div className="relative w-full h-full max-h-[460px] rounded-[2rem] overflow-hidden shadow-2xl border-8 border-white bg-slate-50 flex items-center justify-center group transform transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_30px_60px_rgba(5,150,105,0.15)]">
                         <img
-                            src="/images/user-provided-hero.png"
+                            src="/images/newnew.png"
                             alt="Endüstriyel Simbiyoz Ağı"
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            className="w-full h-full object-contain p-6 transition-transform duration-700 group-hover:scale-105"
                         />
                         {/* İçine hafif aydınlatıcı gradient (Siyahlıkları kırmak için) */}
                         <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/10 via-transparent to-white/20 pointer-events-none"></div>

@@ -228,10 +228,10 @@ export default function AdminDashboard() {
     const navItems = [
         { id: 'pano', label: 'Genel Bakış', icon: Activity },
         { id: 'history', label: 'Eşleşme Geçmişi', icon: History },
-        { id: 'requests', label: 'Sosyal Etki Başvuruları', icon: User },
-        { id: 'profile', label: 'Tesis Bilgileri', icon: Building2 },
+        { id: 'requests', label: 'Sosyal Etki Başvuruları', icon: User, adminOnly: true },
+        { id: 'profile', label: facility?.role === 'admin' ? 'Kullanıcı Bilgileri' : 'Tesis Bilgileri', icon: Building2 },
         { id: 'security', label: 'Şifre ve Güvenlik', icon: Lock },
-    ];
+    ].filter(item => !item.adminOnly || facility?.role === 'admin');
 
     const formatDate = (dateStr) => {
         return new Date(dateStr).toLocaleDateString('tr-TR', {
@@ -251,7 +251,7 @@ export default function AdminDashboard() {
                     <h2 className="text-lg font-extrabold truncate">{facility?.name || 'Tesis'}</h2>
                     <div className="mt-4 pt-4 border-t border-white/10 flex items-center gap-2 text-xs text-emerald-100">
                         <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-                        Yönetici Hesabı Aktif
+                        {facility?.role === 'admin' ? 'Sistem Yönetimi Aktif' : 'Tesis Paneli Aktif'}
                     </div>
                 </div>
 
@@ -302,31 +302,31 @@ export default function AdminDashboard() {
                                 <div className="p-8 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-[1.5rem]">
                                     <div className="flex items-center gap-4 mb-4">
                                         <div className="p-3 bg-emerald-100 text-emerald-700 rounded-xl"><Activity className="w-6 h-6"/></div>
-                                        <p className="font-bold text-emerald-900">Aktif İlanlarım</p>
+                                        <p className="font-bold text-emerald-900">{facility?.role === 'admin' ? 'Sistemdeki Toplam İlanlar' : 'Oluşturulan İlanlar'}</p>
                                     </div>
-                                    <h4 className="text-5xl font-black text-slate-800">{stats.activeListingsCount}</h4>
-                                    <p className="text-xs font-semibold text-emerald-600/80 mt-2">Simbiyoz pazarında bekleyen ilan sayısı.</p>
+                                    <h4 className="text-5xl font-black text-slate-800">{stats.totalListingsCount || stats.activeListingsCount || 0}</h4>
+                                    <p className="text-xs font-semibold text-emerald-600/80 mt-2">{facility?.role === 'admin' ? 'Tüm tesisler tarafından eklenen toplam ilan.' : 'Sisteme eklediğiniz toplam ilan sayısı.'}</p>
                                 </div>
 
                                 <div className="p-8 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100 rounded-[1.5rem]">
                                     <div className="flex items-center gap-4 mb-4">
                                         <div className="p-3 bg-amber-100 text-amber-700 rounded-xl"><Target className="w-6 h-6"/></div>
-                                        <p className="font-bold text-amber-900">Başarılı Eşleşme</p>
+                                        <p className="font-bold text-amber-900">{facility?.role === 'admin' ? 'Sistemdeki Eşleşmeler' : 'Başarılı Eşleşme'}</p>
                                     </div>
                                     <h4 className="text-5xl font-black text-slate-800">{stats.matchedListingsCount}</h4>
-                                    <p className="text-xs font-semibold text-amber-600/80 mt-2">Tamamlanan operasyon ve sinerji sayısı.</p>
+                                    <p className="text-xs font-semibold text-amber-600/80 mt-2">{facility?.role === 'admin' ? 'Platform genelinde tamamlanan sinerji sayısı.' : 'Tamamlanan operasyon ve sinerji sayısı.'}</p>
                                 </div>
 
                                 <div className="p-8 bg-slate-50 border border-slate-100 rounded-[1.5rem] flex flex-col items-center text-center">
                                     <Recycle className="w-8 h-8 text-blue-500 mb-3" />
                                     <h4 className="text-3xl font-black text-slate-800">{stats.totalWasteProcessed} <span className="text-sm text-slate-400 font-bold">Ton</span></h4>
-                                    <p className="text-xs font-semibold text-slate-500 mt-1">Dönüştürülen Atık Miktarı</p>
+                                    <p className="text-xs font-semibold text-slate-500 mt-1">{facility?.role === 'admin' ? 'Sistemde Dönüştürülen Atık' : 'Dönüştürülen Atık Miktarı'}</p>
                                 </div>
 
                                 <div className="p-8 bg-slate-50 border border-slate-100 rounded-[1.5rem] flex flex-col items-center text-center">
                                     <Leaf className="w-8 h-8 text-emerald-500 mb-3" />
                                     <h4 className="text-3xl font-black text-slate-800">{stats.totalCarbonSaved} <span className="text-sm text-slate-400 font-bold">Ton</span></h4>
-                                    <p className="text-xs font-semibold text-slate-500 mt-1">Toplam CO₂ Tasarrufu</p>
+                                    <p className="text-xs font-semibold text-slate-500 mt-1">{facility?.role === 'admin' ? 'Sistemde Kurtarılan CO₂' : 'Toplam CO₂ Tasarrufu'}</p>
                                 </div>
                             </div>
                         )}
@@ -345,74 +345,112 @@ export default function AdminDashboard() {
                             <div className="flex justify-center py-20"><Loader2 className="animate-spin w-10 h-10 text-emerald-500" /></div>
                         ) : (
                             <div className="space-y-10">
-                                {/* Received Matches */}
-                                <div>
-                                    <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Gelen Talepler (İlanlarınıza)</h4>
-                                    {matchHistory.received.length === 0 ? (
-                                        <p className="text-sm text-slate-400 italic bg-slate-50 p-4 rounded-xl border border-dashed">Henüz ilanlarınız için bir eşleşme talebi gelmedi.</p>
-                                    ) : (
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-left text-sm">
-                                                <thead className="text-slate-400 border-b">
-                                                    <tr>
-                                                        <th className="py-4 font-semibold">Tesis</th>
-                                                        <th className="py-4 font-semibold">İlan</th>
-                                                        <th className="py-4 font-semibold">Tarih</th>
-                                                        <th className="py-4 font-semibold text-right">Durum</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y">
-                                                    {matchHistory.received.map(m => (
-                                                        <tr key={m._id} className="group hover:bg-slate-50/50 transition-colors">
-                                                            <td className="py-4">
-                                                                <p className="font-bold text-slate-800">{m.fromFacility?.name}</p>
-                                                                <p className="text-xs text-slate-400">{m.fromFacility?.type} - {m.fromFacility?.region}</p>
-                                                            </td>
-                                                            <td className="py-4 font-medium text-slate-600">{m.toListing?.title}</td>
-                                                            <td className="py-4 text-slate-500">{formatDate(m.createdAt)}</td>
-                                                            <td className="py-4 text-right">
-                                                                <span className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded text-[10px] font-bold uppercase">Tamamlandı</span>
-                                                            </td>
+                                {facility?.role === 'admin' && matchHistory.all ? (
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Tüm Sistem Eşleşmeleri</h4>
+                                        {matchHistory.all.length === 0 ? (
+                                            <p className="text-sm text-slate-400 italic bg-slate-50 p-4 rounded-xl border border-dashed">Sistemde henüz bir eşleşme bulunmuyor.</p>
+                                        ) : (
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-left text-sm">
+                                                    <thead className="text-slate-400 border-b">
+                                                        <tr>
+                                                            <th className="py-4 font-semibold">İstek Yapan Tesis</th>
+                                                            <th className="py-4 font-semibold">İlan Sahibi (Hedef)</th>
+                                                            <th className="py-4 font-semibold">Eşleşilen İlan</th>
+                                                            <th className="py-4 font-semibold">Tarih</th>
+                                                            <th className="py-4 font-semibold text-right">Durum</th>
                                                         </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
+                                                    </thead>
+                                                    <tbody className="divide-y">
+                                                        {matchHistory.all.map(m => (
+                                                            <tr key={m._id} className="group hover:bg-slate-50/50 transition-colors">
+                                                                <td className="py-4 font-bold text-slate-800">{m.fromFacility?.name}</td>
+                                                                <td className="py-4 font-bold text-slate-600">{m.toListing?.createdBy?.name}</td>
+                                                                <td className="py-4 font-medium text-emerald-600">{m.toListing?.wasteType}</td>
+                                                                <td className="py-4 text-slate-500">{formatDate(m.createdAt)}</td>
+                                                                <td className="py-4 text-right">
+                                                                    <span className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded text-[10px] font-bold uppercase">Sinerji Sağlandı</span>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* Received Matches */}
+                                        <div>
+                                            <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Gelen Talepler (İlanlarınıza)</h4>
+                                            {matchHistory.received.length === 0 ? (
+                                                <p className="text-sm text-slate-400 italic bg-slate-50 p-4 rounded-xl border border-dashed">Henüz ilanlarınız için bir eşleşme talebi gelmedi.</p>
+                                            ) : (
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-left text-sm">
+                                                        <thead className="text-slate-400 border-b">
+                                                            <tr>
+                                                                <th className="py-4 font-semibold">Tesis</th>
+                                                                <th className="py-4 font-semibold">İlan</th>
+                                                                <th className="py-4 font-semibold">Tarih</th>
+                                                                <th className="py-4 font-semibold text-right">Durum</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y">
+                                                            {matchHistory.received.map(m => (
+                                                                <tr key={m._id} className="group hover:bg-slate-50/50 transition-colors">
+                                                                    <td className="py-4">
+                                                                        <p className="font-bold text-slate-800">{m.fromFacility?.name}</p>
+                                                                        <p className="text-xs text-slate-400">{m.fromFacility?.type} - {m.fromFacility?.region}</p>
+                                                                    </td>
+                                                                    <td className="py-4 font-medium text-slate-600">{m.toListing?.wasteType}</td>
+                                                                    <td className="py-4 text-slate-500">{formatDate(m.createdAt)}</td>
+                                                                    <td className="py-4 text-right">
+                                                                        <span className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded text-[10px] font-bold uppercase">Tamamlandı</span>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
 
-                                {/* Initiated Matches */}
-                                <div>
-                                    <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Gerçekleştirdiğim Eşleşmeler</h4>
-                                    {matchHistory.initiated.length === 0 ? (
-                                        <p className="text-sm text-slate-400 italic bg-slate-50 p-4 rounded-xl border border-dashed">Henüz başka bir ilanla eşleşme sağlamadınız.</p>
-                                    ) : (
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-left text-sm">
-                                                <thead className="text-slate-400 border-b">
-                                                    <tr>
-                                                        <th className="py-4 font-semibold">Hedef Tesis</th>
-                                                        <th className="py-4 font-semibold">Eşleşilen İlan</th>
-                                                        <th className="py-4 font-semibold">Tarih</th>
-                                                        <th className="py-4 font-semibold text-right">Durum</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y">
-                                                    {matchHistory.initiated.map(m => (
-                                                        <tr key={m._id} className="group hover:bg-slate-50/50 transition-colors">
-                                                            <td className="py-4 font-bold text-slate-800">{m.toListing?.createdBy?.name}</td>
-                                                            <td className="py-4 font-medium text-slate-600">{m.toListing?.title}</td>
-                                                            <td className="py-4 text-slate-500">{formatDate(m.createdAt)}</td>
-                                                            <td className="py-4 text-right">
-                                                                <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase">Sinerji Sağlandı</span>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
+                                        {/* Initiated Matches */}
+                                        <div>
+                                            <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Gerçekleştirdiğim Eşleşmeler</h4>
+                                            {matchHistory.initiated.length === 0 ? (
+                                                <p className="text-sm text-slate-400 italic bg-slate-50 p-4 rounded-xl border border-dashed">Henüz başka bir ilanla eşleşme sağlamadınız.</p>
+                                            ) : (
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-left text-sm">
+                                                        <thead className="text-slate-400 border-b">
+                                                            <tr>
+                                                                <th className="py-4 font-semibold">Hedef Tesis</th>
+                                                                <th className="py-4 font-semibold">Eşleşilen İlan</th>
+                                                                <th className="py-4 font-semibold">Tarih</th>
+                                                                <th className="py-4 font-semibold text-right">Durum</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y">
+                                                            {matchHistory.initiated.map(m => (
+                                                                <tr key={m._id} className="group hover:bg-slate-50/50 transition-colors">
+                                                                    <td className="py-4 font-bold text-slate-800">{m.toListing?.createdBy?.name}</td>
+                                                                    <td className="py-4 font-medium text-slate-600">{m.toListing?.wasteType}</td>
+                                                                    <td className="py-4 text-slate-500">{formatDate(m.createdAt)}</td>
+                                                                    <td className="py-4 text-right">
+                                                                        <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase">Sinerji Sağlandı</span>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>
@@ -484,18 +522,27 @@ export default function AdminDashboard() {
                 {activeTab === 'profile' && (
                     <div className="animate-in slide-in-from-bottom-4 duration-500 max-w-xl">
                         <div className="mb-10">
-                            <h3 className="text-2xl font-extrabold text-slate-800 font-serif">Tesis Bilgileri</h3>
-                            <p className="text-slate-500 text-sm mt-1">Profil bilgileriniz pazar yerinde diğer tesisler tarafından görülür.</p>
+                            <h3 className="text-2xl font-extrabold text-slate-800 font-serif">
+                                {facility?.role === 'admin' ? 'Kullanıcı Bilgileri' : 'Tesis Bilgileri'}
+                            </h3>
+                            <p className="text-slate-500 text-sm mt-1">
+                                {facility?.role === 'admin' ? 'Sistem yöneticisi hesap detaylarınızı buradan güncelleyebilirsiniz.' : 'Profil bilgileriniz pazar yerinde diğer tesisler tarafından görülür.'}
+                            </p>
                         </div>
 
                         <form onSubmit={handleProfileSave} className="space-y-6">
-                            <Field label="Tesis Adı" id="name" value={profile.name} onChange={(e) => setProfile({...profile, name: e.target.value})} icon={Building2} />
-                            <Field label="E-posta" id="email" type="email" value={profile.email} disabled icon={User} />
-                            <div className="grid grid-cols-2 gap-4">
-                                <SelectField label="Tesis Türü" id="type" value={profile.type} onChange={(e) => setProfile({...profile, type: e.target.value})} options={[{value:'Factory', label:'🏭 Fabrika'}, {value:'Greenhouse', label:'🌿 Sera'}, {value:'Cooperative', label:'🤝 Kooperatif'}]} icon={Building2} />
-                                <SelectField label="Bölge" id="region" value={profile.region} onChange={(e) => setProfile({...profile, region: e.target.value})} options={[{value:'Marmara', label:'Marmara'}, {value:'Ege', label:'Ege'}, {value:'İç Anadolu', label:'İç Anadolu'}]} icon={MapPin} />
-                            </div>
-                            <Field label="Sektör" id="sector" value={profile.sector} onChange={(e) => setProfile({...profile, sector: e.target.value})} placeholder="Tekstil, Metal, Gıda..." icon={Briefcase} />
+                            <Field label={facility?.role === 'admin' ? 'Ad / Soyad' : 'Tesis Adı'} id="name" value={profile.name} onChange={(e) => setProfile({...profile, name: e.target.value})} icon={facility?.role === 'admin' ? User : Building2} />
+                            <Field label="E-posta" id="email" type="email" value={profile.email} onChange={(e) => setProfile({...profile, email: e.target.value})} icon={User} />
+                            
+                            {facility?.role !== 'admin' && (
+                                <>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <SelectField label="Tesis Türü" id="type" value={profile.type} onChange={(e) => setProfile({...profile, type: e.target.value})} options={[{value:'Factory', label:'🏭 Fabrika'}, {value:'Greenhouse', label:'🌿 Sera'}, {value:'Cooperative', label:'🤝 Kooperatif'}]} icon={Building2} />
+                                        <SelectField label="Bölge" id="region" value={profile.region} onChange={(e) => setProfile({...profile, region: e.target.value})} options={[{value:'Marmara', label:'Marmara'}, {value:'Ege', label:'Ege'}, {value:'İç Anadolu', label:'İç Anadolu'}]} icon={MapPin} />
+                                    </div>
+                                    <Field label="Sektör" id="sector" value={profile.sector} onChange={(e) => setProfile({...profile, sector: e.target.value})} placeholder="Tekstil, Metal, Gıda..." icon={Briefcase} />
+                                </>
+                            )}
                             
                             <button type="submit" disabled={profileLoading} className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-900/20 flex items-center gap-2">
                                 {profileLoading && <Loader2 className="w-4 h-4 animate-spin" />}

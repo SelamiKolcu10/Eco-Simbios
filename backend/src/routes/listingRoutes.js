@@ -2,7 +2,7 @@ const express = require('express');
 const Listing = require('../models/Listing');
 const Facility = require('../models/Facility');
 const protect = require('../middlewares/authMiddleware');
-const { calculateMatchScore } = require('../utils/aiMatcher');
+const { evaluateMatch } = require('../utils/aiMatcher');
 const Notification = require('../models/Notification');
 const Match = require('../models/Match');
 
@@ -69,9 +69,9 @@ router.post('/', protect, async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // @route   GET /api/listings/:id/matches
 // @desc    Find synergistic facility matches for a specific listing
-// @access  Public or Private
+// @access  Private
 // ─────────────────────────────────────────────────────────────────────────────
-router.get('/:id/matches', async (req, res) => {
+router.get('/:id/matches', protect, async (req, res) => {
     try {
         const listing = await Listing.findById(req.params.id).populate('createdBy');
         if (!listing) return res.status(404).json({ success: false, message: 'İlan bulunamadı.' });
@@ -79,38 +79,53 @@ router.get('/:id/matches', async (req, res) => {
         const ownerFacility = listing.createdBy;
         if (!ownerFacility) return res.status(400).json({ success: false, message: 'İlanın sahibi tesis bulunamadı.' });
 
-        // 1. Find all other facilities in the database EXCEPT the source facility
-        let potentialPartners = await Facility.find({
-            _id: { $ne: ownerFacility._id }
-        });
+        const currentFacilityId = req.facilityId;
+        const currentFacility = await Facility.findById(currentFacilityId);
 
-        const matches = [];
+        if (ownerFacility._id.toString() === currentFacilityId) {
+            // İlan sahibi kendi ilanına "Eşleşme Bul" dediyse sistemdeki herkesi tara
+            let potentialPartners = await Facility.find({ _id: { $ne: ownerFacility._id } });
+            const matches = [];
 
-        // 2. Evaluate each potential partner using the analytical engine
-        for (let partner of potentialPartners) {
-            const { score, distance } = calculateMatchScore(listing, partner, ownerFacility);
-
-            if (score >= 40) {
-                matches.push({
-                    partner: {
-                        _id: partner._id,
-                        name: partner.name,
-                        type: partner.type,
-                        region: partner.region,
-                        sector: partner.sector
-                    },
-                    matchScore: score,
-                    distance: distance,
-                    reasoning: `Bölgesel ve sektörel uyum analizi tamamlandı.`
-                });
+            for (let partner of potentialPartners) {
+                const { matchScore, isMatch, distanceKm, reason } = evaluateMatch(listing, partner);
+                if (isMatch && matchScore >= 40) {
+                    matches.push({
+                        partner: {
+                            _id: partner._id,
+                            name: partner.name,
+                            type: partner.type,
+                            region: partner.region,
+                            sector: partner.sector
+                        },
+                        matchScore: matchScore,
+                        distance: distanceKm,
+                        reasoning: reason || `Bölgesel ve sektörel uyum analizi tamamlandı.`
+                    });
+                }
             }
+            matches.sort((a, b) => b.matchScore - a.matchScore);
+            return res.status(200).json({ success: true, data: matches.slice(0, 3) });
+        } else {
+            // Başka bir tesis, başkasının ilanına "Sinerji Bul" dediyse sadece kendi tesisini analiz et
+            const { matchScore, isMatch, distanceKm, reason } = evaluateMatch(listing, currentFacility);
+            
+            const matchData = {
+                partner: {
+                    _id: currentFacility._id,
+                    name: currentFacility.name,
+                    type: currentFacility.type,
+                    region: currentFacility.region,
+                    sector: currentFacility.sector
+                },
+                matchScore: matchScore > 0 ? matchScore : 35, // Minimum bir skor göster ki heves kırılmasın
+                distance: distanceKm,
+                reasoning: isMatch ? reason : "Sektörel olarak tam eşleşmese de, lojistik ve işbirliği potansiyeli mevcut."
+            };
+
+            return res.status(200).json({ success: true, data: [matchData] });
         }
 
-        // Sort by score descending
-        matches.sort((a, b) => b.matchScore - a.matchScore);
-
-        // Return top 3 matches
-        res.status(200).json({ success: true, data: matches.slice(0, 3) });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -183,33 +198,67 @@ router.post('/:id/match', protect, async (req, res) => {
             return res.status(404).json({ success: false, message: 'İlan bulunamadı.' });
         }
 
-        // Prevent matching with your own listing
-        if (listing.createdBy.toString() === req.facilityId) {
-            return res.status(400).json({ success: false, message: 'Kendi ilanınızla eşleşemezsiniz.' });
-        }
+        const { partnerId } = req.body; 
+        
+        let buyerFacilityId;
+        let notificationRecipientId;
+        let notificationMessage;
+        let initiatorName;
 
-        // Find the facility that initiated the match
-        const initiator = await Facility.findById(req.facilityId);
+        if (listing.createdBy.toString() === req.facilityId) {
+            // İlan sahibi kendi ilanından bir partner seçti
+            if (!partnerId) {
+                return res.status(400).json({ success: false, message: 'Kendi ilanınızla eşleşemezsiniz. Lütfen listeden bir partner seçin.' });
+            }
+            buyerFacilityId = partnerId; // Eşleşilen partner
+            notificationRecipientId = partnerId; // Bildirim partnere gidecek
+            
+            const ownerFacility = await Facility.findById(req.facilityId);
+            initiatorName = ownerFacility.name;
+            notificationMessage = `${ownerFacility.name} tesisi, bir ilanı için sizinle sinerji sağladı!`;
+            
+        } else {
+            // Başka bir tesis (Alıcı) ilana başvurdu
+            buyerFacilityId = req.facilityId; 
+            notificationRecipientId = listing.createdBy.toString(); // Bildirim ilan sahibine gidecek
+            
+            const buyerFacility = await Facility.findById(req.facilityId);
+            initiatorName = buyerFacility.name;
+            notificationMessage = `${buyerFacility.name} tesisi ilanınızla sinerji sağladı!`;
+        }
 
         // Update listing status
         listing.status = 'matched';
         await listing.save();
 
-        // Create a notification for the listing owner
+        // Create a notification for the recipient
         await Notification.create({
-            recipient: listing.createdBy,
+            recipient: notificationRecipientId,
             type: 'match',
-            message: `${initiator.name} tesisinden ilanınız için eşleşme sağlandı!`,
+            message: notificationMessage,
             relatedId: listing._id
         });
 
+        // Broadcast notification to all admins so they can track platform activity
+        const adminFacilities = await Facility.find({ role: 'admin' });
+        if (adminFacilities.length > 0) {
+            const adminNotifications = adminFacilities.map(f => ({
+                recipient: f._id,
+                type: 'system',
+                message: `Sistem Raporu: ${initiatorName} tesisi, sistemdeki bir ilan için sinerji eşleşmesi sağladı.`,
+                relatedId: listing._id
+            }));
+            await Notification.insertMany(adminNotifications);
+        }
+
         // 3. Create a Match record for history
+        // fromFacility DAİMA alıcı/partner tarafıdır (İlan sahibinin kendisi olamaz)
         await Match.create({
-            fromFacility: req.facilityId,
+            fromFacility: buyerFacilityId,
             toListing: listing._id
         });
 
-        res.status(200).json({ success: true, message: 'Eşleşme başarıyla sağlandı ve ilan sahibine bildirildi.' });
+        res.status(200).json({ success: true, message: 'Eşleşme başarıyla sağlandı ve karşı tarafa bildirildi.' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

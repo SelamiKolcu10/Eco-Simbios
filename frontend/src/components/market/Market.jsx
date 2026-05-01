@@ -51,26 +51,42 @@ const getImageForMaterial = (material, category) => {
     return '/images/metal-atik.jpg'; // Universal fallback
 };
 
+const getPricePerKg = (category) => {
+    switch(category) {
+        case 'Metal': return 2.8;    // €2.8/kg
+        case 'Kimyasal': return 3.5; // €3.5/kg
+        case 'Tekstil': return 1.2;  // €1.2/kg
+        case 'Plastik': return 0.9;  // €0.9/kg
+        case 'Ahşap': return 0.4;    // €0.4/kg
+        default: return 1.0;         // €1.0/kg default
+    }
+};
+
 // Helper to transform backend listing format to frontend MarketCard format
-const transformListing = (item) => ({
-    id: item._id,
-    ownerId: item.createdBy?._id || item.createdBy, // raw ObjectId string for ownership checks
-    type: item.type || 'Satılık Atık',
-    material: item.wasteType || item.description || 'Bilinmeyen Malzeme',
-    amount: `${item.amount || 0} kg`,
-    source: item.createdBy?.name || 'Anonim Tesis',
-    location: item.createdBy?.region || 'Belirtilmemiş',
-    category: item.category || 'Diğer',
-    status: item.status || 'active',
-    tag: item.status === 'active' ? 'Yeni İlan' : item.status === 'matched' ? 'Eşleşti' : 'Kapalı',
-    aiMatch: false,
-    buyer: 'Sistem Önerisi Aranıyor',
-    buyerUse: 'Geri Dönüşüm',
-    income: `~${((item.amount || 0) * 1.5).toLocaleString()} TL`,
-    co2: `${((item.amount || 0) * 0.4 / 1000).toFixed(1)} Ton`,
-    createdAt: item.createdAt,
-    image: getImageForMaterial(item.wasteType, item.category)
-});
+const transformListing = (item) => {
+    const pricePerKg = getPricePerKg(item.category);
+    const totalValue = Math.floor((item.amount || 0) * pricePerKg);
+
+    return {
+        id: item._id,
+        ownerId: item.createdBy?._id || item.createdBy, // raw ObjectId string for ownership checks
+        type: item.type || 'Satılık Atık',
+        material: item.wasteType || item.description || 'Bilinmeyen Malzeme',
+        amount: `${item.amount || 0} kg`,
+        source: item.createdBy?.name || 'Anonim Tesis',
+        location: item.createdBy?.region || 'Belirtilmemiş',
+        category: item.category || 'Diğer',
+        status: item.status || 'active',
+        tag: item.status === 'active' ? 'Yeni İlan' : item.status === 'matched' ? 'Eşleşti' : 'Kapalı',
+        aiMatch: false,
+        buyer: 'Sistem Önerisi Aranıyor',
+        buyerUse: 'Geri Dönüşüm',
+        income: `~€${totalValue.toLocaleString('tr-TR')}`,
+        co2: `${((item.amount || 0) * 0.4 / 1000).toFixed(1)} Ton`,
+        createdAt: item.createdAt,
+        image: getImageForMaterial(item.wasteType, item.category)
+    };
+};
 
 
 const categories = [

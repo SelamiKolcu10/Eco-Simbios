@@ -83,3 +83,49 @@ exports.createSocialRequest = async (req, res, next) => {
         res.status(500).json({ success: false, error: 'Server Error' });
     }
 };
+
+exports.createPublicSocialRequest = async (req, res, next) => {
+    try {
+        const {
+            fullName,
+            institution,
+            email,
+            requestType,
+            message,
+            amount
+        } = req.body;
+
+        const newRequest = await SocialRequest.create({
+            fullName,
+            institution,
+            email,
+            requestType,
+            message,
+            amount
+        });
+
+        // Broadcast notification to admin users (facilities with login capability)
+        const Facility = require('../models/Facility');
+        const Notification = require('../models/Notification');
+        
+        const adminFacilities = await Facility.find({ role: 'admin' });
+        
+        if (adminFacilities.length > 0) {
+            const notificationsToCreate = adminFacilities.map(f => ({
+                recipient: f._id,
+                type: 'social_update',
+                message: `Yeni Demo Talebi: ${institution || fullName} tarafından yeni bir talep oluşturuldu.`,
+                relatedId: newRequest._id
+            }));
+            await Notification.insertMany(notificationsToCreate);
+        }
+
+        res.status(201).json({
+            success: true,
+            data: newRequest
+        });
+    } catch (error) {
+        console.error('Error creating public social request:', error);
+        res.status(500).json({ success: false, error: 'Server Error' });
+    }
+};

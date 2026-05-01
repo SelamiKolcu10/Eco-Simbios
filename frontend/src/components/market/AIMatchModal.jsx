@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../lib/api';
 import { BrainCircuit, X, MapPin, Building2, CheckCircle2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function AIMatchModal({ item, onClose, onNavigate }) {
     const [loading, setLoading] = useState(true);
@@ -15,14 +16,14 @@ export default function AIMatchModal({ item, onClose, onNavigate }) {
             try {
                 // Fetch matches from real API
                 // Wait exactly 1.5 seconds total for the 'Wow Factor'
-                const [response] = await Promise.all([
-                    axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/listings/${item.id}/matches`),
+                const [data] = await Promise.all([
+                    api.get(`/listings/${item.id}/matches`),
                     new Promise(resolve => setTimeout(resolve, 1500)) 
                 ]);
 
                 if (isMounted) {
-                    if (response.data.success) {
-                        setMatches(response.data.data);
+                    if (data && data.success) {
+                        setMatches(data.data);
                     } else {
                         setError('Eşleşme bulunamadı.');
                     }
@@ -43,9 +44,14 @@ export default function AIMatchModal({ item, onClose, onNavigate }) {
         return () => { isMounted = false; };
     }, [item.id]);
 
-    const handleConnect = (partner) => {
-        alert(`${partner.name} ile bağlantı isteği gönderildi! E-posta ile bilgilendirileceksiniz.`);
-        onClose();
+    const handleConnect = async (partner) => {
+        try {
+            await api.post(`/listings/${item.id}/match`, { partnerId: partner._id });
+            toast.success(`İlan sahibi ile bağlantı sağlandı! Karşı tarafa bildirim gönderildi.`);
+            onClose();
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Bağlantı kurulurken bir hata oluştu.');
+        }
     };
 
     return (

@@ -41,6 +41,11 @@ const FacilitySchema = new mongoose.Schema(
         source:       { type: String },
 
         // ─── Auth Fields ────────────────────────────────────────────
+        role: {
+            type: String,
+            enum: ['admin', 'user'],
+            default: 'user',
+        },
         email: {
             type: String,
             unique: true,

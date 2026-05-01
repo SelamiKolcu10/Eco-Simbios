@@ -298,12 +298,43 @@ const REGIONS = {
     },
 };
 
-const REGION_LIST = Object.values(REGIONS);
+const BASE_REGION_LIST = Object.values(REGIONS);
+
+REGIONS['all'] = {
+    id: 'all',
+    name: 'Tümü',
+    center: [39.0, 35.2],
+    zoom: 6,
+    bounds: [[36.0, 26.0], [42.0, 45.0]],
+    kpi: {
+        waste: BASE_REGION_LIST.reduce((sum, r) => sum + r.kpi.waste, 0),
+        co2: BASE_REGION_LIST.reduce((sum, r) => sum + r.kpi.co2, 0),
+        matches: BASE_REGION_LIST.reduce((sum, r) => sum + r.kpi.matches, 0),
+        users: BASE_REGION_LIST.reduce((sum, r) => sum + r.kpi.users, 0),
+    },
+    co2Trend: [
+        { q: 'Q1 2025', value: BASE_REGION_LIST.reduce((sum, r) => sum + r.co2Trend[0].value, 0) },
+        { q: 'Q2 2025', value: BASE_REGION_LIST.reduce((sum, r) => sum + r.co2Trend[1].value, 0) },
+        { q: 'Q3 2025', value: BASE_REGION_LIST.reduce((sum, r) => sum + r.co2Trend[2].value, 0) },
+        { q: 'Q4 2025', value: BASE_REGION_LIST.reduce((sum, r) => sum + r.co2Trend[3].value, 0) },
+    ],
+    sectorWaste: [
+        { name: 'Metal', value: 25, color: '#059669' },
+        { name: 'Tekstil', value: 22, color: '#8b5cf6' },
+        { name: 'Kimya', value: 20, color: '#0ea5e9' },
+        { name: 'Gıda', value: 18, color: '#f59e0b' },
+        { name: 'Diğer', value: 15, color: '#94a3b8' },
+    ],
+    nodes: BASE_REGION_LIST.flatMap(r => r.nodes),
+    connections: BASE_REGION_LIST.flatMap(r => r.connections),
+};
+
+const REGION_LIST = [REGIONS['all'], ...BASE_REGION_LIST];
 
 /* ══════════════════════════════════════════════════════════════
    2. BAR CHART VERİSİ — Bölgesel Karşılaştırma
    ══════════════════════════════════════════════════════════════ */
-const barData = REGION_LIST.map(r => ({
+const barData = BASE_REGION_LIST.map(r => ({
     name: r.name,
     bağlantı: r.connections.length,
     tesis: r.nodes.filter(n => n.type === 'factory').length,
@@ -380,7 +411,7 @@ function ChartTooltip({ active, payload, label }) {
    6. ANA BİLEŞEN
    ══════════════════════════════════════════════════════════════ */
 export default function StrategicDashboard() {
-    const [activeRegion, setActiveRegion] = useState('marmara');
+    const [activeRegion, setActiveRegion] = useState('all');
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [apiNodes, setApiNodes] = useState([]);
     const [apiLoading, setApiLoading] = useState(false);
@@ -395,7 +426,11 @@ export default function StrategicDashboard() {
         setApiLoading(true);
         // Map UI region id to DB region name
         const regionName = region.name; // e.g. 'Marmara', 'Ege' etc.
-        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/facilities?region=${encodeURIComponent(regionName)}`)
+        const url = region.id === 'all'
+            ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/facilities`
+            : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/facilities?region=${encodeURIComponent(regionName)}`;
+
+        fetch(url)
             .then(r => r.json())
             .then(json => {
                 if (json.success && json.data.length > 0) {
@@ -519,7 +554,7 @@ export default function StrategicDashboard() {
 
             const typeLabel = node.type === 'factory' ? '🏭 Fabrika'
                 : node.type === 'greenhouse' ? '🌱 Sera'
-                : '👩\u200d🌾 Kadın Kooperatifi';
+                    : '👩\u200d🌾 Kadın Kooperatifi';
 
             const extraInfo = node.type === 'cooperative' && node.women
                 ? `<br/><span style="color:#db2777;">👩 ${node.women} Kadın Üretici</span>`
@@ -539,23 +574,6 @@ export default function StrategicDashboard() {
 
             layerGroup.addLayer(marker);
         });
-
-        // Add region label
-        const labelMarker = L.marker(region.center, {
-            icon: L.divIcon({
-                className: '',
-                html: `<div style="
-                    background:rgba(12,78,51,0.9); color:white; font-size:11px;
-                    font-weight:700; padding:4px 12px; border-radius:20px;
-                    white-space:nowrap; box-shadow:0 2px 8px rgba(0,0,0,0.2);
-                    letter-spacing:0.5px; font-family:system-ui;
-                ">${region.name} Bölgesi</div>`,
-                iconSize: [140, 24],
-                iconAnchor: [70, 12],
-            }),
-            interactive: false,
-        });
-        layerGroup.addLayer(labelMarker);
 
     }, [activeRegion, apiNodes]);
 
@@ -584,7 +602,7 @@ export default function StrategicDashboard() {
                     >
                         <span className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-[#0c4e33]" />
-                            {region.name} Bölgesi
+                            {region.id === 'all' ? region.name : `${region.name} Bölgesi`}
                         </span>
                         <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
@@ -594,11 +612,10 @@ export default function StrategicDashboard() {
                                 <button
                                     key={r.id}
                                     onClick={() => { setActiveRegion(r.id); setDropdownOpen(false); }}
-                                    className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors flex items-center gap-2 ${
-                                        activeRegion === r.id
+                                    className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors flex items-center gap-2 ${activeRegion === r.id
                                             ? 'bg-emerald-50 text-[#0c4e33] font-semibold'
                                             : 'text-slate-600 hover:bg-slate-50'
-                                    }`}
+                                        }`}
                                 >
                                     <MapPin className="h-3.5 w-3.5" />
                                     {r.name}
@@ -665,7 +682,7 @@ export default function StrategicDashboard() {
                         <div className="flex items-center gap-2 mb-4">
                             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                             <span className="text-xs font-bold text-slate-400 tracking-widest uppercase">
-                                {region.name} Bölgesi — Özet
+                                {region.id === 'all' ? `${region.name} — Özet` : `${region.name} Bölgesi — Özet`}
                             </span>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
@@ -772,7 +789,7 @@ export default function StrategicDashboard() {
                                 </div>
                                 <div>
                                     <h3 className="text-sm font-bold text-slate-800 font-serif">
-                                        {region.name} Pilot Bölgesi: Aktif Simbiyoz Ağı
+                                        {region.id === 'all' ? `${region.name}: Aktif Simbiyoz Ağı` : `${region.name} Pilot Bölgesi: Aktif Simbiyoz Ağı`}
                                     </h3>
                                     <p className="text-[10px] text-slate-500">
                                         {region.nodes.length} Tesis · {region.connections.length} Bağlantı

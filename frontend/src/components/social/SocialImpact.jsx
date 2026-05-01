@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import api from '../../lib/api';
 
 export default function SocialImpact() {
     const { isLoggedIn, token } = useAuth();
@@ -10,6 +11,21 @@ export default function SocialImpact() {
     
     const [formData, setFormData] = useState({});
     const [statusIndicator, setStatusIndicator] = useState(null);
+    const [stats, setStats] = useState(null);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            if (isLoggedIn) {
+                try {
+                    const res = await api.get('/stats/summary');
+                    setStats(res.data.data);
+                } catch (err) {
+                    console.error("Error fetching stats:", err);
+                }
+            }
+        };
+        fetchStats();
+    }, [isLoggedIn]);
 
     const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -65,10 +81,10 @@ export default function SocialImpact() {
             {/* 4 Top Metric Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {[
-                    { label: 'CO₂ Elimine Edildi', value: '156.8 T', color: 'text-teal-600', icon: 'fa-cloud' },
-                    { label: 'Kömür Tüketimi Önlendi', value: '312.5 T', color: 'text-amber-500', icon: 'fa-fire-extinguisher' },
-                    { label: 'Termal Etki Engellendi', value: '4.2°C', color: 'text-rose-500', icon: 'fa-temperature-arrow-down' },
-                    { label: 'Su Tasarrufu', value: '24.5K m³', color: 'text-sky-500', icon: 'fa-droplet' },
+                    { label: 'CO₂ Elimine Edildi', value: `${stats ? (156.8 + stats.globalCarbonSaved).toFixed(1) : '156.8'} T`, color: 'text-teal-600', icon: 'fa-cloud' },
+                    { label: 'Kömür Tüketimi Önlendi', value: `${stats ? (312.5 + stats.globalWasteProcessed).toFixed(1) : '312.5'} T`, color: 'text-amber-500', icon: 'fa-fire-extinguisher' },
+                    { label: 'Termal Etki Engellendi', value: `${stats ? (4.2 + (stats.globalWasteProcessed * 0.05)).toFixed(1) : '4.2'}°C`, color: 'text-rose-500', icon: 'fa-temperature-arrow-down' },
+                    { label: 'Su Tasarrufu', value: `${stats ? (24.5 + (stats.globalWasteProcessed * 0.5)).toFixed(1) : '24.5'}K m³`, color: 'text-sky-500', icon: 'fa-droplet' },
                 ].map((item, i) => (
                     <div key={i} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col items-center justify-center text-center">
                         <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center mb-3 border border-slate-100/50">
@@ -106,7 +122,7 @@ export default function SocialImpact() {
                     {/* Inner Text */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 text-center leading-tight">Dağıtılabilir Eğitim<br/>ve Ar-Ge Fonu</span>
-                        <span className="text-3xl font-black text-slate-800 tracking-tight">₺125,000</span>
+                        <span className="text-3xl font-black text-slate-800 tracking-tight">₺{(stats?.socialImpact?.budget || 125000).toLocaleString('tr-TR')}</span>
                     </div>
                 </div>
 
@@ -117,7 +133,7 @@ export default function SocialImpact() {
                             <i className="fa-solid fa-user-graduate text-slate-500 text-lg"></i>
                         </div>
                         <div className="text-center">
-                            <p className="text-sm font-bold text-slate-800">12</p>
+                            <p className="text-sm font-bold text-slate-800">{stats ? stats.socialImpact.scholarships - 110 : 12}</p>
                             <p className="text-[10px] text-slate-500 font-medium">Burs Bekleyenler</p>
                         </div>
                     </div>
@@ -127,7 +143,7 @@ export default function SocialImpact() {
                             <i className="fa-solid fa-users-rectangle text-slate-500 text-lg"></i>
                         </div>
                         <div className="text-center">
-                            <p className="text-sm font-bold text-slate-800">5</p>
+                            <p className="text-sm font-bold text-slate-800">{stats ? stats.socialImpact.clubsSupported : 15}</p>
                             <p className="text-[10px] text-slate-500 font-medium">Desteklenen Kulüpler</p>
                         </div>
                     </div>
@@ -141,7 +157,7 @@ export default function SocialImpact() {
                     <div className="w-12 h-12 rounded-full bg-eco-50 border border-eco-100 flex items-center justify-center mb-3 shadow-[inset_0_1px_3px_rgba(0,0,0,0.05)]">
                         <i className="fa-solid fa-graduation-cap text-eco-500 text-xl"></i>
                     </div>
-                    <p className="text-2xl font-black text-slate-800 mb-1">120</p>
+                    <p className="text-2xl font-black text-slate-800 mb-1">{stats?.socialImpact?.scholarships || 120}</p>
                     <p className="text-[11px] text-slate-600 font-bold mb-1">Finanse Edilen Burs</p>
                     <p className="text-[9px] text-slate-400">Karbon Tasarruflarıyla Finanse Edildi</p>
                 </div>
@@ -151,9 +167,9 @@ export default function SocialImpact() {
                     <div className="w-12 h-12 rounded-full bg-purple-50 border border-purple-100 flex items-center justify-center mb-3 shadow-[inset_0_1px_3px_rgba(0,0,0,0.05)]">
                         <i className="fa-solid fa-user-graduate text-purple-500 text-xl"></i>
                     </div>
-                    <p className="text-2xl font-black text-slate-800 mb-1">49</p>
-                    <p className="text-[11px] text-slate-600 font-bold mb-1">Student Internships</p>
-                    <p className="text-[9px] text-slate-400">Per £50,000 savings &rarr; 1 position</p>
+                    <p className="text-2xl font-black text-slate-800 mb-1">{stats?.socialImpact?.interns || 49}</p>
+                    <p className="text-[11px] text-slate-600 font-bold mb-1">Öğrenci Stajı</p>
+                    <p className="text-[9px] text-slate-400">Atık takasıyla oluşturuldu</p>
                 </div>
 
                 {/* 3. Women Employed */}
@@ -161,7 +177,7 @@ export default function SocialImpact() {
                     <div className="w-12 h-12 rounded-full bg-pink-50 border border-pink-100 flex items-center justify-center mb-3 shadow-[inset_0_1px_3px_rgba(0,0,0,0.05)]">
                         <i className="fa-solid fa-seedling text-pink-500 text-xl cursor-help" title="Seracılık / Kadın İstihdam"></i> 
                     </div>
-                    <p className="text-2xl font-black text-slate-800 mb-1">29</p>
+                    <p className="text-2xl font-black text-slate-800 mb-1">{stats?.socialImpact?.womenEmployed || 29}</p>
                     <p className="text-[11px] text-slate-600 font-bold mb-1">Kadın İstihdam Ediliyor</p>
                     <p className="text-[9px] text-slate-400">%60 kadın istihdam oranı</p>
                 </div>
@@ -171,9 +187,9 @@ export default function SocialImpact() {
                     <div className="w-12 h-12 rounded-full bg-sky-50 border border-sky-100 flex items-center justify-center mb-3 shadow-[inset_0_1px_3px_rgba(0,0,0,0.05)]">
                         <i className="fa-solid fa-people-group text-sky-500 text-xl"></i>
                     </div>
-                    <p className="text-2xl font-black text-slate-800 mb-1">8</p>
-                    <p className="text-[11px] text-slate-600 font-bold mb-1">Communities Served</p>
-                    <p className="text-[9px] text-slate-400">Across Marmara & Aegean</p>
+                    <p className="text-2xl font-black text-slate-800 mb-1">{stats?.socialImpact?.greenhouses || 8}</p>
+                    <p className="text-[11px] text-slate-600 font-bold mb-1">Desteklenen Bölgeler</p>
+                    <p className="text-[9px] text-slate-400">Marmara & Ege Çevresi</p>
                 </div>
 
                 {/* 5. University Clubs Supported */}
@@ -181,9 +197,9 @@ export default function SocialImpact() {
                     <div className="w-12 h-12 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center mb-3 shadow-[inset_0_1px_3px_rgba(0,0,0,0.05)]">
                         <i className="fa-solid fa-building-columns text-amber-500 text-xl"></i> 
                     </div>
-                    <p className="text-2xl font-black text-slate-800 mb-1">15</p>
-                    <p className="text-[11px] text-slate-600 font-bold mb-1">University Clubs Supported</p>
-                    <p className="text-[9px] text-slate-400">R&D and Event Grants</p>
+                    <p className="text-2xl font-black text-slate-800 mb-1">{stats?.socialImpact?.clubsSupported || 15}</p>
+                    <p className="text-[11px] text-slate-600 font-bold mb-1">Kulüp Sponsorluğu</p>
+                    <p className="text-[9px] text-slate-400">Ar-Ge ve Etkinlik Hibesi</p>
                 </div>
             </div>
 
