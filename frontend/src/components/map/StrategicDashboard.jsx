@@ -465,15 +465,37 @@ export default function StrategicDashboard() {
             .finally(() => setApiLoading(false));
     }, [activeRegion]);
 
-    // Total KPIs across all regions
+    const [globalStats, setGlobalStats] = useState(null);
+
+    // Fetch live global stats for the KPI cards
+    useEffect(() => {
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/stats/summary`)
+            .then(r => r.json())
+            .then(json => {
+                if (json.success) setGlobalStats(json.data);
+            })
+            .catch(err => console.error("Error fetching map stats:", err));
+    }, []);
+
+    // Total KPIs across all regions (Override with live data if available)
     const totalKpi = useMemo(() => {
-        return REGION_LIST.reduce((acc, r) => ({
+        if (globalStats) {
+            return {
+                waste: 65000 + globalStats.globalWasteProcessed, // Base mock + real
+                co2: 17000 + globalStats.globalCarbonSaved, // Base mock + real
+                matches: 55 + globalStats.matchedListingsCount, // Base mock + real
+                users: 150 + globalStats.totalListingsCount // Base mock + real (proxy for activity)
+            };
+        }
+
+        // Fallback to purely mock totals
+        return REGION_LIST.filter(r => r.id !== 'all').reduce((acc, r) => ({
             waste: acc.waste + r.kpi.waste,
             co2: acc.co2 + r.kpi.co2,
             matches: acc.matches + r.kpi.matches,
             users: acc.users + r.kpi.users,
         }), { waste: 0, co2: 0, matches: 0, users: 0 });
-    }, []);
+    }, [globalStats]);
 
     // Initialize map
     useEffect(() => {

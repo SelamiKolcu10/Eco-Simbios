@@ -8,100 +8,109 @@ const Match = require('../models/Match');
 exports.getSummary = async (req, res) => {
     try {
         const facilityId = req.facilityId;
-        const facility = await Facility.findById(facilityId);
+        const facility = facilityId ? await Facility.findById(facilityId) : null;
 
-        let query = {};
-        if (facility && facility.role !== 'admin') {
-            query.createdBy = facilityId;
-        }
-
-        // Fetch listings for the specific user (or all if admin)
-        const listings = await Listing.find(query);
-
-        // Fetch matches where the user is the buyer (to include in their stats)
-        let buyerMatches = [];
-        if (facility && facility.role !== 'admin') {
-            buyerMatches = await Match.find({ fromFacility: facilityId }).populate('toListing');
-        }
-
-        // ALWAYS fetch all listings for the global social impact calculations
+        // 1. Fetch ALL data needed for calculations
         const allListings = await Listing.find();
-
-        let activeListingsCount = 0;
-        let matchedListingsCount = 0;
-        let totalWasteProcessed = 0; // in tons
-        let totalCarbonSaved = 0; // estimate
-
         const CO2_MULTIPLIER = 2.3;
 
-        // Process listings owned by the user
-        listings.forEach(listing => {
-            if (listing.status === 'active') {
-                activeListingsCount++;
-            } else if (listing.status === 'matched') {
-                matchedListingsCount++;
-                const amountInTons = (listing.amount || 0) / 1000;
-                totalWasteProcessed += amountInTons;
-                totalCarbonSaved += amountInTons * CO2_MULTIPLIER;
-            }
-        });
-
-        // Add impact from matches where the user was the buyer
-        buyerMatches.forEach(match => {
-            if (match.toListing && match.toListing.status === 'matched') {
-                // Ensure we don't double count if somehow the user bought their own listing
-                if (match.toListing.createdBy.toString() !== facilityId.toString()) {
-                    matchedListingsCount++;
-                    const amountInTons = (match.toListing.amount || 0) / 1000;
-                    totalWasteProcessed += amountInTons;
-                    totalCarbonSaved += amountInTons * CO2_MULTIPLIER;
-                }
-            }
-        });
-
-        // Global Stats Calculation for Social Impact
+        // 2. Calculate Global Impact (Always needed for Social Impact portal)
         let globalWasteProcessed = 0;
         let globalCarbonSaved = 0;
-        allListings.forEach(listing => {
-            if (listing.status === 'matched') {
-                const amountInTons = (listing.amount || 0) / 1000;
-                globalWasteProcessed += amountInTons;
-                globalCarbonSaved += amountInTons * CO2_MULTIPLIER;
+        allListings.forEach(l => {
+            if (l.status === 'matched') {
+                const tons = (l.amount || 0) / 1000;
+                globalWasteProcessed += tons;
+                globalCarbonSaved += tons * CO2_MULTIPLIER;
             }
         });
 
-        // Dinamik Sosyal Etki Hesaplamaları (Base MVP değerlerinin üzerine eklenir)
+        // 3. Calculate Dashboard Stats (Personalized for logged-in users)
+        let dashboardListingsCount = 0;
+        let dashboardMatchedCount = 0;
+        let dashboardWaste = 0;
+        let dashboardCarbon = 0;
+
+        if (facility) {
+            if (facility.role === 'admin') {
+                // Admins see EVERYTHING in their overview
+                dashboardListingsCount = allListings.length;
+                dashboardMatchedCount = allListings.filter(l => l.status === 'matched').length;
+                dashboardWaste = globalWasteProcessed;
+                dashboardCarbon = globalCarbonSaved;
+            } else {
+                // Regular facilities see their own listings + matches they participated in
+                const myOwnedListings = allListings.filter(l => l.createdBy.toString() === facilityId.toString());
+                dashboardListingsCount = myOwnedListings.length;
+                
+                // Impact from owned listings that are matched
+                myOwnedListings.forEach(l => {
+                    if (l.status === 'matched') {
+                        dashboardMatchedCount++;
+                        const tons = (l.amount || 0) / 1000;
+                        dashboardWaste += tons;
+                        dashboardCarbon += tons * CO2_MULTIPLIER;
+                    }
+                });
+
+                // Impact from matches where the user was the buyer
+                const buyerMatches = await Match.find({ fromFacility: facilityId }).populate('toListing');
+                buyerMatches.forEach(m => {
+                    if (m.toListing && m.toListing.status === 'matched') {
+                        // Avoid double count if owner is somehow buyer
+                        if (m.toListing.createdBy.toString() !== facilityId.toString()) {
+                            dashboardMatchedCount++;
+                            const tons = (m.toListing.amount || 0) / 1000;
+                            dashboardWaste += tons;
+                            dashboardCarbon += tons * CO2_MULTIPLIER;
+                        }
+                    }
+                });
+            }
+        }
+
+        // 4. Social Impact Portal Metrics (Dynamic)
         const baseBudget = 125000;
-        const dynamicBudget = baseBudget + Math.floor(globalCarbonSaved * 800); // Her ton CO2 = 800 ₺ fon
+        const dynamicBudget = baseBudget + Math.floor(globalCarbonSaved * 2500); // Increased from 800 to 2500
+        const dynamicScholarships = 120 + Math.floor(globalWasteProcessed / 2.5); // Increased from /10 to /2.5 (4 scholarships per 10 tons)
+        const dynamicInterns = 49 + Math.floor(globalWasteProcessed / 20);
+        const dynamicWomen = 29 + Math.floor(globalWasteProcessed / 50) * 3;
+        const dynamicClubs = 15 + Math.floor(globalWasteProcessed / 100);
+        const dynamicGreenhouses = 24 + Math.floor(globalWasteProcessed / 150);
+        const dynamicFactories = 12 + Math.floor(allListings.length / 5);
 
-        const baseScholarships = 120;
-        const dynamicScholarships = baseScholarships + Math.floor(globalWasteProcessed / 10);
-
-        const baseInterns = 49;
-        const dynamicInterns = baseInterns + Math.floor(globalWasteProcessed / 20);
-
-        const baseWomen = 29;
-        const dynamicWomen = baseWomen + Math.floor(globalWasteProcessed / 50) * 3;
-
-        const baseClubs = 15;
-        const dynamicClubs = baseClubs + Math.floor(globalWasteProcessed / 100);
-
-        const baseGreenhouses = 24;
-        const dynamicGreenhouses = baseGreenhouses + Math.floor(globalWasteProcessed / 150);
-
-        const baseFactories = 12;
-        const dynamicFactories = baseFactories + Math.floor(allListings.length / 5);
+        // 5. Calculate Sustainability Score (1-10)
+        let sustainabilityScore = 0;
+        if (facility) {
+            // Formula: (Matches * 1.5) + (CO2 / 10) + (Listings * 0.1)
+            sustainabilityScore = (dashboardMatchedCount * 1.5) + (dashboardCarbon / 10) + (dashboardListingsCount * 0.1);
+            
+            // Adjust base score if they have any activity
+            if (dashboardListingsCount > 0 && sustainabilityScore < 4) sustainabilityScore = 4.2; 
+            
+            sustainabilityScore = Math.min(10, Math.max(1, sustainabilityScore)); 
+            sustainabilityScore = Math.round(sustainabilityScore * 10) / 10;
+        } else {
+            // Default/Guest platform score
+            sustainabilityScore = 8.4;
+        }
 
         res.status(200).json({
             success: true,
             data: {
-                totalListingsCount: listings.length,
-                activeListingsCount,
-                matchedListingsCount,
-                totalWasteProcessed: Math.round(totalWasteProcessed * 10) / 10,
-                totalCarbonSaved: Math.round(totalCarbonSaved * 10) / 10,
+                // Dashboard metrics
+                totalListingsCount: dashboardListingsCount,
+                activeListingsCount: dashboardListingsCount,
+                matchedListingsCount: dashboardMatchedCount,
+                totalWasteProcessed: Math.round(dashboardWaste * 10) / 10,
+                totalCarbonSaved: Math.round(dashboardCarbon * 10) / 10,
+                sustainabilityScore: sustainabilityScore,
+                
+                // Global metrics
                 globalWasteProcessed: Math.round(globalWasteProcessed * 10) / 10,
                 globalCarbonSaved: Math.round(globalCarbonSaved * 10) / 10,
+                
+                // Social Impact data
                 socialImpact: {
                     budget: dynamicBudget,
                     scholarships: dynamicScholarships,

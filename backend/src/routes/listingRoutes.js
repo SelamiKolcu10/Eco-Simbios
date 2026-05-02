@@ -1,7 +1,7 @@
 const express = require('express');
 const Listing = require('../models/Listing');
 const Facility = require('../models/Facility');
-const protect = require('../middlewares/authMiddleware');
+const { protect } = require('../middlewares/authMiddleware');
 const { evaluateMatch } = require('../utils/aiMatcher');
 const Notification = require('../models/Notification');
 const Match = require('../models/Match');

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { createSocialRequest, getSocialRequests, updateSocialRequestStatus, createPublicSocialRequest } = require('../controllers/socialController');
-const protect = require('../middlewares/authMiddleware');
+const { protect } = require('../middlewares/authMiddleware');
 
 router.post('/public', createPublicSocialRequest);
 router.post('/', protect, createSocialRequest);

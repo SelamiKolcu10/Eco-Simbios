@@ -1,69 +1,102 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import SustainabilityCertificate from './SustainabilityCertificate';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../lib/api';
 
 export default function SocialImpact() {
-    const { isLoggedIn, token } = useAuth();
+    const { isLoggedIn, token, facility } = useAuth();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('club');
     
+    // Define tabs based on user role
+    const publicTabs = [
+        { id: 'student', label: 'Burs & Staj Talebi', icon: 'fa-graduation-cap' },
+        { id: 'club', label: 'Üniversite Kulüp Bütçesi', icon: 'fa-building-columns' },
+        { id: 'women', label: 'Kadın İstihdam Kooperatifi', icon: 'fa-person-dress' },
+    ];
+
+    const corporateTabs = [
+        { id: 'recycle', label: 'Lojistik & Geri Dönüşüm', icon: 'fa-truck-arrow-right' },
+        { id: 'other', label: 'Kurumsal Özel Talep', icon: 'fa-file-lines' },
+    ];
+
+    const [activeTab, setActiveTab] = useState(isLoggedIn ? 'recycle' : 'student');
     const [formData, setFormData] = useState({});
     const [statusIndicator, setStatusIndicator] = useState(null);
+    const [showCertificate, setShowCertificate] = useState(false);
     const [stats, setStats] = useState(null);
 
+    const fetchStats = async () => {
+        try {
+            const res = await api.get('/stats/summary');
+            setStats(res.data);
+        } catch (err) {
+            console.error("Error fetching stats:", err);
+        }
+    };
+
     useEffect(() => {
-        const fetchStats = async () => {
-            if (isLoggedIn) {
-                try {
-                    const res = await api.get('/stats/summary');
-                    setStats(res.data.data);
-                } catch (err) {
-                    console.error("Error fetching stats:", err);
-                }
-            }
-        };
         fetchStats();
-    }, [isLoggedIn]);
+    }, []);
+
+    // Re-fetch stats when certificate is opened to ensure latest data
+    useEffect(() => {
+        if (showCertificate) {
+            fetchStats();
+        }
+    }, [showCertificate]);
 
     const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
     const handleSubmit = async () => {
-        if (!isLoggedIn) {
-            toast.error('Başvuru yapmak için lütfen giriş yapın veya kayıt olun.');
-            navigate('/login');
-            return;
-        }
-
         try {
             setStatusIndicator('loading');
-            const reqTypeMap = { student: 'Burs', women: 'Kooperatif', club: 'Kulüp', recycle: 'Lojistik', other: 'Diğer' };
+            const reqTypeMap = { 
+                student: 'Burs', 
+                women: 'Kooperatif', 
+                club: 'Kulüp', 
+                recycle: 'Lojistik', 
+                other: 'Kurumsal Talep' 
+            };
+            
             const payload = { ...formData, requestType: reqTypeMap[activeTab] || 'Diğer' };
-
             const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-            const res = await fetch(`${API_BASE}/api/social/request`, {
+            
+            // Determine endpoint: Public for students/clubs, Protected for logistics/corporate
+            const isPublicType = ['student', 'women', 'club'].includes(activeTab);
+            const endpoint = isPublicType ? `${API_BASE}/api/social/request/public` : `${API_BASE}/api/social/request`;
+            
+            const headers = { 'Content-Type': 'application/json' };
+            if (!isPublicType && token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const res = await fetch(endpoint, {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
-                },
+                headers,
                 body: JSON.stringify(payload)
             });
 
             if (res.ok) {
                 setStatusIndicator('success');
                 setFormData({});
+                toast.success('Talebiniz başarıyla iletildi!');
                 setTimeout(() => setStatusIndicator(null), 3000);
             } else {
+                const errData = await res.json();
+                toast.error(errData.error || 'Başvuru sırasında bir hata oluştu.');
                 setStatusIndicator('error');
                 setTimeout(() => setStatusIndicator(null), 3000);
             }
         } catch (err) {
             setStatusIndicator('error');
+            toast.error('Bağlantı hatası oluştu.');
             setTimeout(() => setStatusIndicator(null), 3000);
         }
     };
+
+    const currentTabs = isLoggedIn ? corporateTabs : publicTabs;
 
     return (
         <div className="space-y-8 w-full max-w-7xl mx-auto pb-10">
@@ -73,8 +106,12 @@ export default function SocialImpact() {
                     <i className="fa-solid fa-leaf text-teal-600 text-xl drop-shadow-sm"></i>
                 </div>
                 <div>
-                    <h3 className="text-lg font-bold text-slate-800">Şeffaflık ve Başvuru Portalı</h3>
-                    <p className="text-xs text-slate-500 font-medium">Sosyal Girişimler & İklim Yatırımları Takip Sistemi</p>
+                    <h3 className="text-lg font-bold text-slate-800">
+                        {isLoggedIn ? 'Kurumsal Sosyal Etki ve Operasyon Portalı' : 'Topluluk Şeffaflık ve Başvuru Portalı'}
+                    </h3>
+                    <p className="text-xs text-slate-500 font-medium">
+                        {isLoggedIn ? `${facility?.name} - Sürdürülebilirlik Yönetimi` : 'Sosyal Girişimler & İklim Yatırımları Takip Sistemi'}
+                    </p>
                 </div>
             </div>
 
@@ -96,58 +133,104 @@ export default function SocialImpact() {
                 ))}
             </div>
 
-            {/* Canlı Fon Havuzu (Replaced Carbon Credit Funnel) */}
-            <div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-[0_2px_15px_rgba(0,0,0,0.02)] flex flex-col items-center justify-center relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-400 to-emerald-400"></div>
-                
-                <h3 className="text-sm font-bold text-slate-800 mb-8 self-center md:self-start w-full text-center md:text-left">Canlı Fon Havuzu</h3>
-                
-                {/* Glowing Counter / Circular Progress */}
-                <div className="relative w-56 h-56 mb-8 flex items-center justify-center">
-                    {/* Outer Glow */}
-                    <div className="absolute inset-4 rounded-full bg-teal-400/10 blur-2xl animate-pulse"></div>
+            {/* Canlı Fon Havuzu */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-1 bg-white rounded-2xl p-8 border border-slate-100 shadow-[0_2px_15px_rgba(0,0,0,0.02)] flex flex-col items-center justify-center relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-400 to-emerald-400"></div>
+                    <h3 className="text-sm font-bold text-slate-800 mb-6 w-full text-center">Canlı Fon Havuzu</h3>
                     
-                    {/* SVG Circle */}
-                    <svg className="w-full h-full transform -rotate-90 relative z-10" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="46" fill="none" stroke="#f8fafc" strokeWidth="6" />
-                        <circle cx="50" cy="50" r="46" fill="none" stroke="url(#tealGradient)" strokeWidth="6" strokeDasharray="289" strokeDashoffset="58" className="transition-all duration-1000 ease-out" strokeLinecap="round" />
-                        <defs>
-                            <linearGradient id="tealGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="#2dd4bf" />
-                                <stop offset="100%" stopColor="#10b981" />
-                            </linearGradient>
-                        </defs>
-                    </svg>
-                    
-                    {/* Inner Text */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 text-center leading-tight">Dağıtılabilir Eğitim<br/>ve Ar-Ge Fonu</span>
-                        <span className="text-3xl font-black text-slate-800 tracking-tight">₺{(stats?.socialImpact?.budget || 125000).toLocaleString('tr-TR')}</span>
+                    <div className="relative w-48 h-48 mb-6 flex items-center justify-center">
+                        <div className="absolute inset-4 rounded-full bg-teal-400/10 blur-2xl animate-pulse"></div>
+                        <svg className="w-full h-full transform -rotate-90 relative z-10" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="46" fill="none" stroke="#f8fafc" strokeWidth="6" />
+                            <circle cx="50" cy="50" r="46" fill="none" stroke="url(#tealGradient)" strokeWidth="6" strokeDasharray="289" strokeDashoffset="58" className="transition-all duration-1000 ease-out" strokeLinecap="round" />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 text-center leading-tight">Toplam<br/>Sosyal Fon</span>
+                            <span className="text-2xl font-black text-slate-800 tracking-tight">₺{(stats?.socialImpact?.budget || 125000).toLocaleString('tr-TR')}</span>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-6 w-full justify-center">
+                        <div className="text-center">
+                            <p className="text-sm font-bold text-slate-800">{stats ? stats.socialImpact.scholarships : 120}</p>
+                            <p className="text-[10px] text-slate-500 font-medium">Aktif Burs</p>
+                        </div>
+                        <div className="h-8 w-[1px] bg-slate-200"></div>
+                        <div className="text-center">
+                            <p className="text-sm font-bold text-slate-800">{stats ? stats.socialImpact.clubsSupported : 15}</p>
+                            <p className="text-[10px] text-slate-500 font-medium">Desteklenen Kulüp</p>
+                        </div>
                     </div>
                 </div>
 
-                {/* Stats Icons */}
-                <div className="flex items-center gap-8 w-full justify-center">
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shadow-sm">
-                            <i className="fa-solid fa-user-graduate text-slate-500 text-lg"></i>
+                {/* Kurumsal Katkı Kartı - Sadece Login olanlara özel */}
+                {isLoggedIn ? (
+                    <div className="lg:col-span-2 bg-white rounded-2xl p-8 border border-emerald-100 relative overflow-hidden shadow-[0_2px_15px_rgba(0,0,0,0.02)]">
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                                    <i className="fa-solid fa-chart-line text-emerald-600"></i>
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-800">{facility?.role === 'admin' ? 'Kurumların Etki Özeti' : 'Kurumsal Etki Özetiniz'}</h3>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-6 mb-8">
+                                <div>
+                                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">{facility?.role === 'admin' ? 'Finansal Etki' : 'Sizin Katkınız'}</p>
+                                    <p className="text-3xl font-black text-emerald-600">₺{((stats?.totalCarbonSaved || 0) * 2500).toLocaleString('tr-TR')}</p>
+                                    <p className="text-[10px] text-slate-400 mt-1">Sinerji operasyonlarınızdan aktarılan pay</p>
+                                </div>
+                                <div>
+                                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Finanse Ettiğiniz</p>
+                                    <p className="text-3xl font-black text-sky-600">{Math.floor((stats?.totalWasteProcessed || 0) / 2.5)} Öğrenci</p>
+                                    <p className="text-[10px] text-slate-400 mt-1">Burs havuzundaki doğrudan etkiniz</p>
+                                </div>
+                            </div>
+
+                            {facility?.role !== 'admin' && (
+                                <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <i className="fa-solid fa-medal text-amber-500"></i>
+                                        <span className="text-sm font-medium text-slate-700">Kurumsal Sürdürülebilirlik Puanı: <span className="text-emerald-600 font-bold">{stats?.sustainabilityScore || '...'} / 10</span></span>
+                                    </div>
+                                    <button 
+                                        onClick={() => setShowCertificate(true)}
+                                        className="text-[10px] font-bold bg-[#006A4E] text-white hover:bg-[#00523b] px-4 py-2 rounded-lg transition-colors shadow-sm"
+                                    >
+                                        SERTİFİKAYI İNCELE
+                                    </button>
+                                </div>
+                            )}
                         </div>
-                        <div className="text-center">
-                            <p className="text-sm font-bold text-slate-800">{stats ? stats.socialImpact.scholarships - 110 : 12}</p>
-                            <p className="text-[10px] text-slate-500 font-medium">Burs Bekleyenler</p>
+                        {/* Background Decoration */}
+                        <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-emerald-50/50 rounded-full blur-3xl"></div>
+                    </div>
+                ) : (
+                    <div className="lg:col-span-2 bg-white rounded-2xl p-8 border border-slate-100 shadow-[0_2px_15px_rgba(0,0,0,0.02)] flex flex-col justify-center">
+                        <div className="flex items-start gap-5 mb-6">
+                            <div className="w-14 h-14 rounded-2xl bg-teal-50 flex items-center justify-center shrink-0">
+                                <i className="fa-solid fa-hand-holding-heart text-teal-600 text-2xl"></i>
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-800 mb-1">Döngüsel Ekonomi Sosyal Faydaya Dönüşüyor</h3>
+                                <p className="text-sm text-slate-500">Eco-Simbios platformunda fabrikalar arası kurulan her sinerji, otomatik olarak toplumsal bir fona katkı sağlar. Bu fonlar öğrenciler, kadın kooperatifleri ve üniversite kulüpleri için kullanılır.</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            {[
+                                { icon: 'fa-graduation-cap', label: 'Eğitim', color: 'bg-eco-50 text-eco-600' },
+                                { icon: 'fa-seedling', label: 'Ekoloji', color: 'bg-emerald-50 text-emerald-600' },
+                                { icon: 'fa-people-group', label: 'Toplum', color: 'bg-sky-50 text-sky-600' },
+                            ].map((item, i) => (
+                                <div key={i} className={`flex flex-col items-center gap-2 p-4 rounded-xl ${item.color}`}>
+                                    <i className={`fa-solid ${item.icon} text-lg`}></i>
+                                    <span className="text-[10px] font-bold uppercase">{item.label}</span>
+                                </div>
+                            ))}
                         </div>
                     </div>
-                    <div className="h-10 w-[1px] bg-slate-200"></div>
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shadow-sm">
-                            <i className="fa-solid fa-users-rectangle text-slate-500 text-lg"></i>
-                        </div>
-                        <div className="text-center">
-                            <p className="text-sm font-bold text-slate-800">{stats ? stats.socialImpact.clubsSupported : 15}</p>
-                            <p className="text-[10px] text-slate-500 font-medium">Desteklenen Kulüpler</p>
-                        </div>
-                    </div>
-                </div>
+                )}
             </div>
 
             {/* 5 Merged Social Metric Cards */}
@@ -203,22 +286,21 @@ export default function SocialImpact() {
                 </div>
             </div>
 
-            {/* Dynamic Application Portal */}
-            <div className="bg-white rounded-3xl p-6 md:p-10 shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-100">
+            {/* Dynamic Application/Action Portal */}
+            {!(isLoggedIn && facility?.role === 'admin') && (
+                <div className="bg-white rounded-3xl p-6 md:p-10 shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-100">
                 <div className="mb-8 text-center">
-                    <h3 className="text-2xl font-bold text-slate-800 mb-2">Hızlı Talep & Başvuru Portalı</h3>
-                    <p className="text-sm text-slate-500">Destek almak istediğiniz alanı seçerek dinamik başvuru formunu doldurun.</p>
+                    <h3 className="text-2xl font-bold text-slate-800 mb-2">
+                        {isLoggedIn ? 'Kurumsal Operasyon & Talep Merkezi' : 'Hızlı Talep & Başvuru Portalı'}
+                    </h3>
+                    <p className="text-sm text-slate-500">
+                        {isLoggedIn ? 'Atık yönetimi, lojistik destek veya kurumsal ihtiyaçlarınız için talep oluşturun.' : 'Destek almak istediğiniz alanı seçerek dinamik başvuru formunu doldurun.'}
+                    </p>
                 </div>
 
                 {/* Category Selector Buttons */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-10">
-                    {[
-                        { id: 'student', label: 'Burs & Staj Talebi', icon: 'fa-graduation-cap' },
-                        { id: 'women', label: 'Kadın İstihdam Kooperatifi', icon: 'fa-person-dress' },
-                        { id: 'club', label: 'Üniversite Kulüp Bütçesi', icon: 'fa-building-columns' },
-                        { id: 'recycle', label: 'Lojistik & Geri Dönüşüm', icon: 'fa-truck-arrow-right' },
-                        { id: 'other', label: 'Diğer Başvuru', icon: 'fa-file-lines' },
-                    ].map(cat => (
+                <div className={`grid gap-3 mb-10 ${currentTabs.length === 2 ? 'grid-cols-2 max-w-md mx-auto' : 'grid-cols-2 md:grid-cols-3'}`}>
+                    {currentTabs.map(cat => (
                         <button 
                             key={cat.id}
                             onClick={() => setActiveTab(cat.id)}
@@ -455,14 +537,14 @@ export default function SocialImpact() {
                         <button 
                             onClick={handleSubmit}
                             disabled={statusIndicator === 'loading'}
-                            className="w-full md:w-2/3 lg:w-1/2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white font-bold text-sm py-4 px-8 rounded-xl shadow-[0_4px_15px_rgba(30,41,59,0.3)] hover:shadow-[0_6px_20px_rgba(30,41,59,0.4)] transition-all flex items-center justify-center gap-3">
+                            className="w-full md:w-2/3 lg:w-1/2 bg-[#006A4E] hover:bg-[#00523b] disabled:opacity-50 text-white font-bold text-sm py-4 px-8 rounded-xl shadow-[0_4px_15px_rgba(0,106,78,0.2)] hover:shadow-[0_6px_20px_rgba(0,106,78,0.3)] transition-all flex items-center justify-center gap-3">
                             <span>{statusIndicator === 'loading' ? 'Gönderiliyor...' : 'Talebi İncelemeye Gönder'}</span>
                             <i className={`fa-solid ${statusIndicator === 'loading' ? 'fa-spinner fa-spin' : 'fa-paper-plane'} text-[11px]`}></i>
                         </button>
                     </div>
-
                 </div>
             </div>
+            )}
 
             {/* Goodwill Agreements Footer */}
             <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_1px_5px_rgba(0,0,0,0.02)] flex items-center justify-center gap-4 mt-6">
@@ -472,6 +554,14 @@ export default function SocialImpact() {
                     <p className="text-[11px] text-slate-500 font-medium tracking-wide">All participating greenhouses commit to local hiring and fair wages.</p>
                 </div>
             </div>
+            {/* Certificate Modal */}
+            {showCertificate && (
+                <SustainabilityCertificate 
+                    facility={facility} 
+                    stats={stats} 
+                    onClose={() => setShowCertificate(false)} 
+                />
+            )}
         </div>
     );
 }

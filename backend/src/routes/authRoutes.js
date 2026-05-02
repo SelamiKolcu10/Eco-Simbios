@@ -163,7 +163,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 // @desc    Get the currently logged-in facility (token required)
 // @access  Private
 // ─────────────────────────────────────────────────────────────────────────────
-const protect = require('../middlewares/authMiddleware');
+const { protect } = require('../middlewares/authMiddleware');
 
 router.get('/me', protect, async (req, res) => {
     try {
