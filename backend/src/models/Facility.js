@@ -40,6 +40,23 @@ const FacilitySchema = new mongoose.Schema(
         efficiency:   { type: Number },
         source:       { type: String },
 
+        // ─── Subscription & Billing Fields ──────────────────────────
+        subscription: {
+            plan: {
+                type: String,
+                enum: ['free', 'pro', 'enterprise'],
+                default: 'free',
+            },
+            startDate: { type: Date, default: Date.now },
+            endDate:   { type: Date },
+            isActive:  { type: Boolean, default: true },
+        },
+        billing: {
+            totalCommissionPaid:   { type: Number, default: 0 },
+            totalTransactionValue: { type: Number, default: 0 },
+            transactionCount:      { type: Number, default: 0 },
+        },
+
         // ─── Auth Fields ────────────────────────────────────────────
         role: {
             type: String,

@@ -4,7 +4,9 @@ import toast from 'react-hot-toast';
 import { 
     User, Lock, Building2, MapPin, Briefcase, Loader2, 
     Activity, Target, Recycle, Leaf, ArrowUpRight, 
-    History, Settings, LogOut, ChevronRight
+    History, Settings, LogOut, ChevronRight, CreditCard, TrendingUp,
+    DollarSign, BarChart3, Crown, Zap, Check, Star, Users, Search,
+    Factory, Sprout, Handshake, Mail, Calendar, Shield
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -12,6 +14,8 @@ const API_AUTH = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/a
 const API_STATS = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/stats';
 const API_MATCHES = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/matches';
 const API_SOCIAL = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/social/request';
+const API_SUBSCRIPTION = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/subscription';
+const API_FACILITIES = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/facilities';
 
 // ─── Small reusable field ─────────────────────────────────────────────────────
 function Field({ label, id, type = 'text', value, onChange, placeholder, icon: Icon, disabled }) {
@@ -103,6 +107,17 @@ export default function AdminDashboard() {
     const [socialRequests, setSocialRequests] = useState([]);
     const [requestsLoading, setRequestsLoading] = useState(false);
 
+    // ── Subscription state ────────────────────────────────────────────────────
+    const [subscriptionData, setSubscriptionData] = useState(null);
+    const [revenueData, setRevenueData] = useState(null);
+    const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+    const [plans, setPlans] = useState([]);
+
+    // ── Registered Facilities state ───────────────────────────────────────────
+    const [allFacilities, setAllFacilities] = useState([]);
+    const [facilitiesLoading, setFacilitiesLoading] = useState(false);
+    const [facilitySearch, setFacilitySearch] = useState('');
+
     // Populate profile form
     useEffect(() => {
         if (facility) {
@@ -154,6 +169,56 @@ export default function AdminDashboard() {
         fetchHistory();
     }, [token, activeTab]);
 
+    // Fetch Subscription / Revenue Data
+    useEffect(() => {
+        const fetchSubscription = async () => {
+            if (!token || activeTab !== 'subscription') return;
+            try {
+                setSubscriptionLoading(true);
+                // Fetch plans
+                const plansRes = await axios.get(`${API_SUBSCRIPTION}/plans`);
+                if (plansRes.data.success) setPlans(plansRes.data.data);
+
+                if (facility?.role === 'admin') {
+                    // Admin: fetch revenue overview
+                    const revRes = await axios.get(`${API_SUBSCRIPTION}/revenue`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (revRes.data.success) setRevenueData(revRes.data.data);
+                } else {
+                    // User: fetch own subscription
+                    const subRes = await axios.get(`${API_SUBSCRIPTION}/my`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (subRes.data.success) setSubscriptionData(subRes.data.data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch subscription data:', error);
+            } finally {
+                setSubscriptionLoading(false);
+            }
+        };
+        fetchSubscription();
+    }, [token, activeTab, facility?.role]);
+
+    // Handle plan upgrade (mock)
+    const handleUpgrade = async (planId) => {
+        const toastId = toast.loading('Plan yükseltiliyor...');
+        try {
+            const res = await axios.put(`${API_SUBSCRIPTION}/upgrade`, { plan: planId }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            toast.success(res.data.message, { id: toastId });
+            // Refetch subscription data
+            const subRes = await axios.get(`${API_SUBSCRIPTION}/my`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (subRes.data.success) setSubscriptionData(subRes.data.data);
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Plan yükseltme başarısız.', { id: toastId });
+        }
+    };
+
     // Fetch Social Requests
     useEffect(() => {
         const fetchRequests = async () => {
@@ -173,6 +238,25 @@ export default function AdminDashboard() {
         fetchRequests();
     }, [token, activeTab]);
 
+    // Fetch Registered Facilities (Admin)
+    useEffect(() => {
+        const fetchFacilities = async () => {
+            if (!token || activeTab !== 'facilities' || facility?.role !== 'admin') return;
+            try {
+                setFacilitiesLoading(true);
+                const res = await axios.get(API_FACILITIES, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (res.data.success) setAllFacilities(res.data.data);
+            } catch (error) {
+                console.error('Failed to fetch facilities:', error);
+            } finally {
+                setFacilitiesLoading(false);
+            }
+        };
+        fetchFacilities();
+    }, [token, activeTab, facility?.role]);
+
     const handleStatusUpdate = async (id, status) => {
         const toastId = toast.loading('Durum güncelleniyor...');
         try {
@@ -183,6 +267,25 @@ export default function AdminDashboard() {
             setSocialRequests(prev => prev.map(r => r._id === id ? { ...r, status } : r));
         } catch (err) {
             toast.error('Güncelleme başarısız oldu.', { id: toastId });
+        }
+    };
+
+    // Handle match approve/reject
+    const handleMatchAction = async (matchId, action) => {
+        const label = action === 'approve' ? 'Onaylandı' : 'Reddedildi';
+        const toastId = toast.loading(`Eşleşme ${action === 'approve' ? 'onaylandı' : 'reddediliyor'}...`);
+        try {
+            await axios.patch(`${API_MATCHES}/${matchId}/${action}`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            toast.success(`Eşleşme ${label.toLowerCase()}.`, { id: toastId });
+            // Update local state
+            setMatchHistory(prev => ({
+                ...prev,
+                all: prev.all?.map(m => m._id === matchId ? { ...m, status: action === 'approve' ? 'approved' : 'rejected' } : m) || []
+            }));
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'İşlem başarısız.', { id: toastId });
         }
     };
 
@@ -228,6 +331,8 @@ export default function AdminDashboard() {
     const navItems = [
         { id: 'pano', label: 'Genel Bakış', icon: Activity },
         { id: 'history', label: 'Eşleşme Geçmişi', icon: History },
+        { id: 'subscription', label: facility?.role === 'admin' ? 'Gelir ve Abonelikler' : 'Abonelik Planım', icon: CreditCard },
+        { id: 'facilities', label: 'Kayıtlı Tesisler', icon: Users, adminOnly: true },
         { id: 'requests', label: 'Sosyal Etki Başvuruları', icon: User, adminOnly: true },
         { id: 'profile', label: facility?.role === 'admin' ? 'Kullanıcı Bilgileri' : 'Tesis Bilgileri', icon: Building2 },
         { id: 'security', label: 'Şifre ve Güvenlik', icon: Lock },
@@ -273,7 +378,7 @@ export default function AdminDashboard() {
                     ))}
                 </nav>
 
-                <div className="mt-auto pt-8">
+                <div className="mt-3">
                     <button
                         onClick={logout}
                         className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 transition-all"
@@ -359,18 +464,60 @@ export default function AdminDashboard() {
                                                             <th className="py-4 font-semibold">İlan Sahibi (Hedef)</th>
                                                             <th className="py-4 font-semibold">Eşleşilen İlan</th>
                                                             <th className="py-4 font-semibold">Tarih</th>
-                                                            <th className="py-4 font-semibold text-right">Durum</th>
+                                                            <th className="py-4 font-semibold text-center">Durum</th>
+                                                            <th className="py-4 font-semibold text-right">İşlem</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y">
                                                         {matchHistory.all.map(m => (
                                                             <tr key={m._id} className="group hover:bg-slate-50/50 transition-colors">
-                                                                <td className="py-4 font-bold text-slate-800">{m.fromFacility?.name}</td>
-                                                                <td className="py-4 font-bold text-slate-600">{m.toListing?.createdBy?.name}</td>
+                                                                <td className="py-4">
+                                                                    <p className="font-bold text-slate-800">{m.fromFacility?.name}</p>
+                                                                    {m.status === 'approved' && m.fromFacility?.email && (
+                                                                        <p className="text-xs text-blue-500 mt-0.5 flex items-center gap-1"><Mail className="w-3 h-3" />{m.fromFacility.email}</p>
+                                                                    )}
+                                                                </td>
+                                                                <td className="py-4">
+                                                                    <p className="font-bold text-slate-600">{m.toListing?.createdBy?.name}</p>
+                                                                    {m.status === 'approved' && m.toListing?.createdBy?.email && (
+                                                                        <p className="text-xs text-blue-500 mt-0.5 flex items-center gap-1"><Mail className="w-3 h-3" />{m.toListing.createdBy.email}</p>
+                                                                    )}
+                                                                </td>
                                                                 <td className="py-4 font-medium text-emerald-600">{m.toListing?.wasteType}</td>
                                                                 <td className="py-4 text-slate-500">{formatDate(m.createdAt)}</td>
+                                                                <td className="py-4 text-center">
+                                                                    {m.status === 'pending' && (
+                                                                        <span className="px-2 py-1 bg-amber-50 text-amber-600 rounded text-[10px] font-bold uppercase">⏳ Onay Bekliyor</span>
+                                                                    )}
+                                                                    {m.status === 'approved' && (
+                                                                        <span className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded text-[10px] font-bold uppercase">✅ Onaylandı</span>
+                                                                    )}
+                                                                    {m.status === 'rejected' && (
+                                                                        <span className="px-2 py-1 bg-red-50 text-red-600 rounded text-[10px] font-bold uppercase">❌ Reddedildi</span>
+                                                                    )}
+                                                                    {!m.status && (
+                                                                        <span className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded text-[10px] font-bold uppercase">Sinerji Sağlandı</span>
+                                                                    )}
+                                                                </td>
                                                                 <td className="py-4 text-right">
-                                                                    <span className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded text-[10px] font-bold uppercase">Sinerji Sağlandı</span>
+                                                                    {m.status === 'pending' ? (
+                                                                        <div className="flex items-center gap-2 justify-end">
+                                                                            <button
+                                                                                onClick={() => handleMatchAction(m._id, 'approve')}
+                                                                                className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-all shadow-sm"
+                                                                            >
+                                                                                ✅ Onayla
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => handleMatchAction(m._id, 'reject')}
+                                                                                className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold rounded-lg transition-all"
+                                                                            >
+                                                                                Reddet
+                                                                            </button>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className="text-xs text-slate-400">İşlendi</span>
+                                                                    )}
                                                                 </td>
                                                             </tr>
                                                         ))}
@@ -394,7 +541,8 @@ export default function AdminDashboard() {
                                                                 <th className="py-4 font-semibold">Tesis</th>
                                                                 <th className="py-4 font-semibold">İlan</th>
                                                                 <th className="py-4 font-semibold">Tarih</th>
-                                                                <th className="py-4 font-semibold text-right">Durum</th>
+                                                                <th className="py-4 font-semibold">Durum</th>
+                                                                <th className="py-4 font-semibold text-right">İletişim</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody className="divide-y">
@@ -406,8 +554,21 @@ export default function AdminDashboard() {
                                                                     </td>
                                                                     <td className="py-4 font-medium text-slate-600">{m.toListing?.wasteType}</td>
                                                                     <td className="py-4 text-slate-500">{formatDate(m.createdAt)}</td>
+                                                                    <td className="py-4">
+                                                                        {m.status === 'pending' && <span className="px-2 py-1 bg-amber-50 text-amber-600 rounded text-[10px] font-bold uppercase">⏳ Onay Bekliyor</span>}
+                                                                        {m.status === 'approved' && <span className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded text-[10px] font-bold uppercase">✅ Onaylandı</span>}
+                                                                        {m.status === 'rejected' && <span className="px-2 py-1 bg-red-50 text-red-600 rounded text-[10px] font-bold uppercase">❌ Reddedildi</span>}
+                                                                        {!m.status && <span className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded text-[10px] font-bold uppercase">Tamamlandı</span>}
+                                                                    </td>
                                                                     <td className="py-4 text-right">
-                                                                        <span className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded text-[10px] font-bold uppercase">Tamamlandı</span>
+                                                                        {m.status === 'approved' && m.fromFacility?.email ? (
+                                                                            <a href={`mailto:${m.fromFacility.email}`} className="flex items-center gap-1.5 justify-end text-blue-500 hover:text-blue-700 text-xs font-bold transition-colors">
+                                                                                <Mail className="w-3.5 h-3.5" />
+                                                                                {m.fromFacility.email}
+                                                                            </a>
+                                                                        ) : (
+                                                                            <span className="text-xs text-slate-300">{m.status === 'pending' ? 'Onay bekleniyor' : '—'}</span>
+                                                                        )}
                                                                     </td>
                                                                 </tr>
                                                             ))}
@@ -430,7 +591,8 @@ export default function AdminDashboard() {
                                                                 <th className="py-4 font-semibold">Hedef Tesis</th>
                                                                 <th className="py-4 font-semibold">Eşleşilen İlan</th>
                                                                 <th className="py-4 font-semibold">Tarih</th>
-                                                                <th className="py-4 font-semibold text-right">Durum</th>
+                                                                <th className="py-4 font-semibold">Durum</th>
+                                                                <th className="py-4 font-semibold text-right">İletişim</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody className="divide-y">
@@ -439,8 +601,21 @@ export default function AdminDashboard() {
                                                                     <td className="py-4 font-bold text-slate-800">{m.toListing?.createdBy?.name}</td>
                                                                     <td className="py-4 font-medium text-slate-600">{m.toListing?.wasteType}</td>
                                                                     <td className="py-4 text-slate-500">{formatDate(m.createdAt)}</td>
+                                                                    <td className="py-4">
+                                                                        {m.status === 'pending' && <span className="px-2 py-1 bg-amber-50 text-amber-600 rounded text-[10px] font-bold uppercase">⏳ Onay Bekliyor</span>}
+                                                                        {m.status === 'approved' && <span className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded text-[10px] font-bold uppercase">✅ Sinerji Sağlandı</span>}
+                                                                        {m.status === 'rejected' && <span className="px-2 py-1 bg-red-50 text-red-600 rounded text-[10px] font-bold uppercase">❌ Reddedildi</span>}
+                                                                        {!m.status && <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase">Sinerji Sağlandı</span>}
+                                                                    </td>
                                                                     <td className="py-4 text-right">
-                                                                        <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase">Sinerji Sağlandı</span>
+                                                                        {m.status === 'approved' && m.toListing?.createdBy?.email ? (
+                                                                            <a href={`mailto:${m.toListing.createdBy.email}`} className="flex items-center gap-1.5 justify-end text-blue-500 hover:text-blue-700 text-xs font-bold transition-colors">
+                                                                                <Mail className="w-3.5 h-3.5" />
+                                                                                {m.toListing.createdBy.email}
+                                                                            </a>
+                                                                        ) : (
+                                                                            <span className="text-xs text-slate-300">{m.status === 'pending' ? 'Onay bekleniyor' : '—'}</span>
+                                                                        )}
                                                                     </td>
                                                                 </tr>
                                                             ))}
@@ -513,6 +688,393 @@ export default function AdminDashboard() {
                                         </div>
                                     ))
                                 )}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ── Kayıtlı Tesisler (Admin Only) ─────────────────────────── */}
+                {activeTab === 'facilities' && (
+                    <div className="animate-in slide-in-from-bottom-4 duration-500">
+                        <div className="mb-10">
+                            <h3 className="text-2xl font-extrabold text-slate-800 font-serif">Kayıtlı Tesisler</h3>
+                            <p className="text-slate-500 text-sm mt-1">Sisteme kayıt olan tüm tesis ve kullanıcıları görüntüleyin.</p>
+                        </div>
+
+                        {/* Summary Cards */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                            <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl text-center">
+                                <Users className="w-5 h-5 text-blue-500 mx-auto mb-2" />
+                                <h4 className="text-2xl font-black text-slate-800">{allFacilities.length}</h4>
+                                <p className="text-[11px] font-bold text-blue-600/70 mt-0.5">Toplam Kayıt</p>
+                            </div>
+                            <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl text-center">
+                                <Factory className="w-5 h-5 text-amber-500 mx-auto mb-2" />
+                                <h4 className="text-2xl font-black text-slate-800">{allFacilities.filter(f => f.type === 'Factory').length}</h4>
+                                <p className="text-[11px] font-bold text-amber-600/70 mt-0.5">Fabrika</p>
+                            </div>
+                            <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-center">
+                                <Sprout className="w-5 h-5 text-emerald-500 mx-auto mb-2" />
+                                <h4 className="text-2xl font-black text-slate-800">{allFacilities.filter(f => f.type === 'Greenhouse').length}</h4>
+                                <p className="text-[11px] font-bold text-emerald-600/70 mt-0.5">Sera</p>
+                            </div>
+                            <div className="p-4 bg-violet-50 border border-violet-100 rounded-2xl text-center">
+                                <Handshake className="w-5 h-5 text-violet-500 mx-auto mb-2" />
+                                <h4 className="text-2xl font-black text-slate-800">{allFacilities.filter(f => f.type === 'Cooperative').length}</h4>
+                                <p className="text-[11px] font-bold text-violet-600/70 mt-0.5">Kooperatif</p>
+                            </div>
+                        </div>
+
+                        {/* Search */}
+                        <div className="relative mb-6">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <input
+                                type="text"
+                                value={facilitySearch}
+                                onChange={(e) => setFacilitySearch(e.target.value)}
+                                placeholder="Tesis adı, e-posta veya bölge ile arayın..."
+                                className="w-full pl-10 pr-4 py-3 text-sm border border-slate-200 rounded-xl bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition"
+                            />
+                        </div>
+
+                        {facilitiesLoading ? (
+                            <div className="flex justify-center py-20"><Loader2 className="animate-spin w-10 h-10 text-emerald-500" /></div>
+                        ) : (
+                            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-sm">
+                                        <thead className="bg-slate-50/80">
+                                            <tr className="text-slate-400 border-b">
+                                                <th className="py-4 px-5 font-semibold">Tesis Adı</th>
+                                                <th className="py-4 px-5 font-semibold">Tür</th>
+                                                <th className="py-4 px-5 font-semibold">Bölge</th>
+                                                <th className="py-4 px-5 font-semibold">E-posta</th>
+                                                <th className="py-4 px-5 font-semibold">Sektör</th>
+                                                <th className="py-4 px-5 font-semibold text-center">Abonelik</th>
+                                                <th className="py-4 px-5 font-semibold text-center">Rol</th>
+                                                <th className="py-4 px-5 font-semibold text-right">Kayıt Tarihi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {allFacilities
+                                                .filter(f => {
+                                                    if (!facilitySearch) return true;
+                                                    const q = facilitySearch.toLowerCase();
+                                                    return (
+                                                        f.name?.toLowerCase().includes(q) ||
+                                                        f.email?.toLowerCase().includes(q) ||
+                                                        f.region?.toLowerCase().includes(q) ||
+                                                        f.sector?.toLowerCase().includes(q) ||
+                                                        f.type?.toLowerCase().includes(q)
+                                                    );
+                                                })
+                                                .map(f => {
+                                                    const typeConfig = {
+                                                        Factory: { label: '🏭 Fabrika', cls: 'bg-amber-50 text-amber-700' },
+                                                        Greenhouse: { label: '🌿 Sera', cls: 'bg-emerald-50 text-emerald-700' },
+                                                        Cooperative: { label: '🤝 Kooperatif', cls: 'bg-violet-50 text-violet-700' },
+                                                    };
+                                                    const tc = typeConfig[f.type] || { label: f.type, cls: 'bg-slate-50 text-slate-600' };
+                                                    const planConfig = {
+                                                        free: { label: 'Ücretsiz', cls: 'bg-slate-100 text-slate-600' },
+                                                        pro: { label: 'Pro', cls: 'bg-emerald-50 text-emerald-700' },
+                                                        enterprise: { label: 'Kurumsal', cls: 'bg-violet-50 text-violet-700' },
+                                                    };
+                                                    const pc = planConfig[f.subscription?.plan] || planConfig.free;
+                                                    return (
+                                                        <tr key={f._id} className="group hover:bg-slate-50/50 transition-colors">
+                                                            <td className="py-4 px-5">
+                                                                <p className="font-bold text-slate-800">{f.name}</p>
+                                                            </td>
+                                                            <td className="py-4 px-5">
+                                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${tc.cls}`}>{tc.label}</span>
+                                                            </td>
+                                                            <td className="py-4 px-5">
+                                                                <div className="flex items-center gap-1.5 text-slate-600">
+                                                                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                                                                    <span className="font-medium">{f.region || '—'}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="py-4 px-5">
+                                                                <div className="flex items-center gap-1.5 text-slate-500">
+                                                                    <Mail className="w-3.5 h-3.5 text-slate-400" />
+                                                                    <span className="font-medium text-xs">{f.email || '—'}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="py-4 px-5 text-slate-600 font-medium text-xs">{f.sector || '—'}</td>
+                                                            <td className="py-4 px-5 text-center">
+                                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${pc.cls}`}>{pc.label}</span>
+                                                            </td>
+                                                            <td className="py-4 px-5 text-center">
+                                                                {f.role === 'admin' ? (
+                                                                    <span className="px-2 py-0.5 bg-red-50 text-red-600 rounded text-[10px] font-bold uppercase flex items-center gap-1 justify-center"><Shield className="w-3 h-3" /> Admin</span>
+                                                                ) : (
+                                                                    <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase">Tesis</span>
+                                                                )}
+                                                            </td>
+                                                            <td className="py-4 px-5 text-right">
+                                                                <div className="flex items-center gap-1.5 justify-end text-slate-400">
+                                                                    <Calendar className="w-3.5 h-3.5" />
+                                                                    <span className="text-xs font-medium">{f.createdAt ? formatDate(f.createdAt) : '—'}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {allFacilities.length === 0 && (
+                                    <p className="text-sm text-slate-400 italic p-6 text-center">Henüz kayıtlı tesis bulunmuyor.</p>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ── Abonelik ve Gelir Paneli ──────────────────────────────── */}
+                {activeTab === 'subscription' && (
+                    <div className="animate-in slide-in-from-bottom-4 duration-500">
+                        {subscriptionLoading ? (
+                            <div className="flex justify-center py-20"><Loader2 className="animate-spin w-10 h-10 text-emerald-500" /></div>
+                        ) : facility?.role === 'admin' ? (
+                            /* ──────── ADMIN: Revenue Dashboard ──────── */
+                            <div>
+                                <div className="mb-10">
+                                    <h3 className="text-2xl font-extrabold text-slate-800 font-serif">Gelir ve Abonelik Yönetimi</h3>
+                                    <p className="text-slate-500 text-sm mt-1">Platform komisyon geliri ve abonelik durumu özeti.</p>
+                                </div>
+
+                                {/* Revenue KPI Cards */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                                    <div className="p-6 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="p-2.5 bg-emerald-100 text-emerald-700 rounded-xl"><DollarSign className="w-5 h-5" /></div>
+                                            <p className="font-bold text-emerald-900 text-sm">Toplam Komisyon Geliri</p>
+                                        </div>
+                                        <h4 className="text-3xl font-black text-slate-800">₺{(revenueData?.totalRevenue || 0).toLocaleString('tr-TR')}</h4>
+                                        <p className="text-xs font-semibold text-emerald-600/80 mt-1">Tüm işlemlerden elde edilen gelir.</p>
+                                    </div>
+                                    <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="p-2.5 bg-blue-100 text-blue-700 rounded-xl"><BarChart3 className="w-5 h-5" /></div>
+                                            <p className="font-bold text-blue-900 text-sm">Toplam İşlem Hacmi</p>
+                                        </div>
+                                        <h4 className="text-3xl font-black text-slate-800">₺{(revenueData?.totalVolume || 0).toLocaleString('tr-TR')}</h4>
+                                        <p className="text-xs font-semibold text-blue-600/80 mt-1">{revenueData?.totalTransactions || 0} işlem tamamlandı.</p>
+                                    </div>
+                                    <div className="p-6 bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-100 rounded-2xl">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="p-2.5 bg-violet-100 text-violet-700 rounded-xl"><TrendingUp className="w-5 h-5" /></div>
+                                            <p className="font-bold text-violet-900 text-sm">Yıllık Abonelik Geliri (Proj.)</p>
+                                        </div>
+                                        <h4 className="text-3xl font-black text-slate-800">₺{(revenueData?.subscriptionRevenue || 0).toLocaleString('tr-TR')}</h4>
+                                        <p className="text-xs font-semibold text-violet-600/80 mt-1">Mevcut aboneliklere dayalı projeksiyon.</p>
+                                    </div>
+                                </div>
+
+                                {/* Subscription Distribution */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                    <div className="bg-white border border-slate-200 rounded-2xl p-6">
+                                        <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-5">Abonelik Dağılımı</h4>
+                                        <div className="space-y-4">
+                                            {[
+                                                { plan: 'Free', count: revenueData?.subscriptionDistribution?.free || 0, color: 'bg-slate-400', label: 'Ücretsiz' },
+                                                { plan: 'Pro', count: revenueData?.subscriptionDistribution?.pro || 0, color: 'bg-emerald-500', label: 'Profesyonel' },
+                                                { plan: 'Enterprise', count: revenueData?.subscriptionDistribution?.enterprise || 0, color: 'bg-violet-500', label: 'Kurumsal' },
+                                            ].map(item => {
+                                                const total = (revenueData?.subscriptionDistribution?.free || 0) + (revenueData?.subscriptionDistribution?.pro || 0) + (revenueData?.subscriptionDistribution?.enterprise || 0);
+                                                const pct = total > 0 ? Math.round((item.count / total) * 100) : 0;
+                                                return (
+                                                    <div key={item.plan}>
+                                                        <div className="flex justify-between text-sm mb-1.5">
+                                                            <span className="font-bold text-slate-700">{item.label}</span>
+                                                            <span className="font-bold text-slate-500">{item.count} tesis ({pct}%)</span>
+                                                        </div>
+                                                        <div className="w-full bg-slate-100 rounded-full h-2.5">
+                                                            <div className={`${item.color} h-2.5 rounded-full transition-all duration-700`} style={{ width: `${Math.max(pct, 2)}%` }}></div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Monthly Revenue Chart */}
+                                    <div className="bg-white border border-slate-200 rounded-2xl p-6">
+                                        <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-5">Aylık Komisyon Geliri</h4>
+                                        <div className="flex items-end gap-2 h-40">
+                                            {(revenueData?.monthlyRevenue || []).map((m, i) => {
+                                                const maxRev = Math.max(...(revenueData?.monthlyRevenue || []).map(x => x.revenue), 1);
+                                                const height = Math.max((m.revenue / maxRev) * 100, 4);
+                                                return (
+                                                    <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                                                        <span className="text-[10px] font-bold text-slate-500">₺{m.revenue.toLocaleString('tr-TR')}</span>
+                                                        <div className="w-full bg-gradient-to-t from-emerald-500 to-teal-400 rounded-t-lg transition-all duration-500" style={{ height: `${height}%` }}></div>
+                                                        <span className="text-[9px] font-semibold text-slate-400 mt-1">{m.month}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Recent Transactions Table */}
+                                <div className="bg-white border border-slate-200 rounded-2xl p-6">
+                                    <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-5">Son İşlemler</h4>
+                                    {(revenueData?.recentTransactions || []).length === 0 ? (
+                                        <p className="text-sm text-slate-400 italic bg-slate-50 p-4 rounded-xl border border-dashed">Henüz bir komisyon işlemi bulunmuyor.</p>
+                                    ) : (
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left text-sm">
+                                                <thead className="text-slate-400 border-b">
+                                                    <tr>
+                                                        <th className="py-3 font-semibold">Satıcı</th>
+                                                        <th className="py-3 font-semibold">Alıcı</th>
+                                                        <th className="py-3 font-semibold">İlan</th>
+                                                        <th className="py-3 font-semibold text-right">İşlem Değeri</th>
+                                                        <th className="py-3 font-semibold text-right">Komisyon</th>
+                                                        <th className="py-3 font-semibold text-right">Plan</th>
+                                                        <th className="py-3 font-semibold text-right">Tarih</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y">
+                                                    {revenueData.recentTransactions.map(t => (
+                                                        <tr key={t._id} className="group hover:bg-slate-50/50 transition-colors">
+                                                            <td className="py-3 font-bold text-slate-800">{t.seller?.name || '—'}</td>
+                                                            <td className="py-3 font-medium text-slate-600">{t.buyer?.name || '—'}</td>
+                                                            <td className="py-3 font-medium text-emerald-600">{t.listing?.wasteType || '—'}</td>
+                                                            <td className="py-3 text-right font-bold text-slate-700">₺{(t.estimatedValue || 0).toLocaleString('tr-TR')}</td>
+                                                            <td className="py-3 text-right">
+                                                                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-xs font-bold">₺{(t.commissionAmount || 0).toLocaleString('tr-TR')}</span>
+                                                            </td>
+                                                            <td className="py-3 text-right">
+                                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                                                    t.sellerPlan === 'enterprise' ? 'bg-violet-50 text-violet-700' :
+                                                                    t.sellerPlan === 'pro' ? 'bg-emerald-50 text-emerald-700' :
+                                                                    'bg-slate-100 text-slate-600'
+                                                                }`}>{t.sellerPlan}</span>
+                                                            </td>
+                                                            <td className="py-3 text-right text-slate-500 text-xs">{formatDate(t.createdAt)}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            /* ──────── USER: Subscription Panel ──────── */
+                            <div>
+                                <div className="mb-10">
+                                    <h3 className="text-2xl font-extrabold text-slate-800 font-serif">Abonelik Planım</h3>
+                                    <p className="text-slate-500 text-sm mt-1">Mevcut planınızı yönetin ve daha avantajlı planlara yükseltin.</p>
+                                </div>
+
+                                {/* Current Plan Badge */}
+                                {subscriptionData?.plan && (
+                                    <div className={`mb-8 p-6 rounded-2xl border-2 ${
+                                        subscriptionData.plan.id === 'enterprise' ? 'bg-gradient-to-br from-violet-50 to-purple-50 border-violet-200' :
+                                        subscriptionData.plan.id === 'pro' ? 'bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200' :
+                                        'bg-gradient-to-br from-slate-50 to-gray-50 border-slate-200'
+                                    }`}>
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <Crown className={`w-6 h-6 ${
+                                                subscriptionData.plan.id === 'enterprise' ? 'text-violet-500' :
+                                                subscriptionData.plan.id === 'pro' ? 'text-emerald-500' :
+                                                'text-slate-400'
+                                            }`} />
+                                            <h4 className="text-lg font-extrabold text-slate-800">Mevcut Plan: {subscriptionData.plan.name}</h4>
+                                        </div>
+                                        <p className="text-sm text-slate-500">Komisyon oranı: <span className="font-bold text-slate-700">%{subscriptionData.plan.commissionRate}</span> • Toplam ödenen komisyon: <span className="font-bold text-slate-700">₺{(subscriptionData.billing?.totalCommissionPaid || 0).toLocaleString('tr-TR')}</span></p>
+                                    </div>
+                                )}
+
+                                {/* Plan Comparison Cards */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                                    {plans.map(plan => {
+                                        const isCurrentPlan = subscriptionData?.plan?.id === plan.id;
+                                        const planColorMap = {
+                                            slate: { bg: 'from-slate-50 to-gray-50', border: 'border-slate-200', badge: 'bg-slate-100 text-slate-600', btn: 'bg-slate-600 hover:bg-slate-700' },
+                                            emerald: { bg: 'from-emerald-50 to-teal-50', border: 'border-emerald-200', badge: 'bg-emerald-100 text-emerald-700', btn: 'bg-emerald-600 hover:bg-emerald-700' },
+                                            violet: { bg: 'from-violet-50 to-purple-50', border: 'border-violet-200', badge: 'bg-violet-100 text-violet-700', btn: 'bg-violet-600 hover:bg-violet-700' },
+                                        };
+                                        const colors = planColorMap[plan.color] || planColorMap.slate;
+
+                                        return (
+                                            <div key={plan.id} className={`relative p-6 rounded-2xl border-2 bg-gradient-to-br ${colors.bg} ${isCurrentPlan ? colors.border : 'border-slate-100'} transition-all hover:shadow-lg ${plan.popular ? 'ring-2 ring-emerald-300 ring-offset-2' : ''}`}>
+                                                {plan.popular && (
+                                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                                                        <span className="px-3 py-1 bg-emerald-500 text-white text-[10px] font-bold uppercase rounded-full flex items-center gap-1 shadow-lg">
+                                                            <Star className="w-3 h-3" /> En Popüler
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                <div className="text-center mb-6">
+                                                    <h4 className="text-lg font-extrabold text-slate-800 mb-1">{plan.name}</h4>
+                                                    <div className="flex items-baseline justify-center gap-1">
+                                                        <span className="text-3xl font-black text-slate-800">₺{plan.price.toLocaleString('tr-TR')}</span>
+                                                        <span className="text-sm text-slate-400 font-bold">/ay</span>
+                                                    </div>
+                                                    <span className={`inline-block mt-2 px-2.5 py-0.5 ${colors.badge} rounded-full text-xs font-bold`}>Komisyon: %{plan.commissionRate}</span>
+                                                </div>
+                                                <ul className="space-y-2.5 mb-6">
+                                                    {plan.features.map((f, i) => (
+                                                        <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
+                                                            <Check className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                                                            <span>{f}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                                {isCurrentPlan ? (
+                                                    <button disabled className="w-full py-2.5 rounded-xl text-sm font-bold bg-slate-100 text-slate-400 cursor-default">
+                                                        Mevcut Plan
+                                                    </button>
+                                                ) : (
+                                                    <button onClick={() => handleUpgrade(plan.id)} className={`w-full py-2.5 rounded-xl text-sm font-bold text-white ${colors.btn} transition-all shadow-lg hover:shadow-xl`}>
+                                                        {plan.price === 0 ? 'Ücretsiz Başla' : 'Planı Seç'}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Transaction History */}
+                                <div className="bg-white border border-slate-200 rounded-2xl p-6">
+                                    <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-5">Komisyon Geçmişi</h4>
+                                    {(subscriptionData?.transactions || []).length === 0 ? (
+                                        <p className="text-sm text-slate-400 italic bg-slate-50 p-4 rounded-xl border border-dashed">Henüz bir komisyon işleminiz bulunmuyor.</p>
+                                    ) : (
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left text-sm">
+                                                <thead className="text-slate-400 border-b">
+                                                    <tr>
+                                                        <th className="py-3 font-semibold">Partner</th>
+                                                        <th className="py-3 font-semibold">İlan</th>
+                                                        <th className="py-3 font-semibold text-right">İşlem Değeri</th>
+                                                        <th className="py-3 font-semibold text-right">Komisyon (%{subscriptionData?.plan?.commissionRate})</th>
+                                                        <th className="py-3 font-semibold text-right">Tarih</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y">
+                                                    {subscriptionData.transactions.map(t => (
+                                                        <tr key={t._id} className="group hover:bg-slate-50/50 transition-colors">
+                                                            <td className="py-3 font-bold text-slate-800">{t.seller?.name === facility?.name ? t.buyer?.name : t.seller?.name}</td>
+                                                            <td className="py-3 font-medium text-emerald-600">{t.listing?.wasteType || '—'}</td>
+                                                            <td className="py-3 text-right font-bold text-slate-700">₺{(t.estimatedValue || 0).toLocaleString('tr-TR')}</td>
+                                                            <td className="py-3 text-right">
+                                                                <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded text-xs font-bold">₺{(t.commissionAmount || 0).toLocaleString('tr-TR')}</span>
+                                                            </td>
+                                                            <td className="py-3 text-right text-slate-500 text-xs">{formatDate(t.createdAt)}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>

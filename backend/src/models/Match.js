@@ -11,6 +11,11 @@ const matchSchema = new mongoose.Schema({
         ref: 'Listing',
         required: true
     },
+    status: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending'
+    },
     createdAt: {
         type: Date,
         default: Date.now

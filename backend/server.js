@@ -34,6 +34,8 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/matches', matchRoutes);
 const socialRoutes = require('./src/routes/socialRoutes');
 app.use('/api/social/request', socialRoutes);
+const subscriptionRoutes = require('./src/routes/subscriptionRoutes');
+app.use('/api/subscription', subscriptionRoutes);
 
 
 // Base health-check route

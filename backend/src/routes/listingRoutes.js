@@ -5,6 +5,7 @@ const { protect } = require('../middlewares/authMiddleware');
 const { evaluateMatch } = require('../utils/aiMatcher');
 const Notification = require('../models/Notification');
 const Match = require('../models/Match');
+const Transaction = require('../models/Transaction');
 
 const router = express.Router();
 
@@ -227,38 +228,38 @@ router.post('/:id/match', protect, async (req, res) => {
             notificationMessage = `${buyerFacility.name} tesisi ilanınızla sinerji sağladı!`;
         }
 
-        // Update listing status
-        listing.status = 'matched';
+        // Update listing status to pending (waiting for admin approval)
+        listing.status = 'active'; // stays active until admin approves
         await listing.save();
 
         // Create a notification for the recipient
         await Notification.create({
             recipient: notificationRecipientId,
             type: 'match',
-            message: notificationMessage,
+            message: `${initiatorName} tesisi ilanınızla eşleşme talebinde bulundu. Yönetici onayı bekleniyor.`,
             relatedId: listing._id
         });
 
-        // Broadcast notification to all admins so they can track platform activity
+        // Broadcast notification to all admins — they need to approve
         const adminFacilities = await Facility.find({ role: 'admin' });
         if (adminFacilities.length > 0) {
             const adminNotifications = adminFacilities.map(f => ({
                 recipient: f._id,
                 type: 'system',
-                message: `Sistem Raporu: ${initiatorName} tesisi, sistemdeki bir ilan için sinerji eşleşmesi sağladı.`,
+                message: `⏳ Onay Bekliyor: ${initiatorName} tesisi bir eşleşme talebinde bulundu. Onayınız bekleniyor.`,
                 relatedId: listing._id
             }));
             await Notification.insertMany(adminNotifications);
         }
 
-        // 3. Create a Match record for history
-        // fromFacility DAİMA alıcı/partner tarafıdır (İlan sahibinin kendisi olamaz)
+        // 3. Create a Match record with PENDING status (no commission yet)
         await Match.create({
             fromFacility: buyerFacilityId,
-            toListing: listing._id
+            toListing: listing._id,
+            status: 'pending'
         });
 
-        res.status(200).json({ success: true, message: 'Eşleşme başarıyla sağlandı ve karşı tarafa bildirildi.' });
+        res.status(200).json({ success: true, message: 'Eşleşme talebi oluşturuldu. Yönetici onayı bekleniyor.' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
