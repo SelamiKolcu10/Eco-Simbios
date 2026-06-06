@@ -1,3 +1,14 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
+
+# IDE
 .vscode/
+
+# Environment variables (HASSAS BİLGİLER - asla commit'lenmemeli!)
+.env
+.env.local
+.env.production
+.env.*.local
